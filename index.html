@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mini LIDA · Class Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/vega@5.30.0/build/vega.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@5.21.0/build/vega-lite.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@6.26.0/build/vega-embed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: phone views are a single column of stage cards with a bottom tab bar;
+   the wall (projector) view is a two-column grid: join panel left, live content right. */
+:root{
+  --bg:#f3f2ee; --card:#ffffff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#dcdad3;
+  --acc:#0078d4; --acc-ink:#ffffff; --tint:#e6f1fb; --bad:#c4314b; --good:#107c41;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141414; --card:#1e1e1e; --ink:#ececec; --muted:#a0a0a0; --line:#353535;
+  --acc:#4aa3ff; --acc-ink:#0b0b0b; --tint:#14273a; --bad:#ff6b81; --good:#4cc38a; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141414; --card:#1e1e1e; --ink:#ececec; --muted:#a0a0a0; --line:#353535;
+  --acc:#4aa3ff; --acc-ink:#0b0b0b; --tint:#14273a; --bad:#ff6b81; --good:#4cc38a; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+.app{max-width:560px;margin:0 auto;padding:16px 16px 96px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.brand{font-weight:900;letter-spacing:.02em;font-size:15px}
+.brand b{color:var(--acc)}
+.pill{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+h1{font-size:28px;line-height:1.2;margin:4px 0 6px;font-weight:900}
+p.lead{margin:0 0 16px;color:var(--muted);line-height:1.6}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;min-width:0}
+.stage{font-size:12px;font-weight:700;color:var(--acc);letter-spacing:.06em;text-transform:uppercase}
+.card h2{font-size:20px;margin:2px 0 4px;font-weight:900}
+.card .who{font-size:13px;color:var(--muted);margin-bottom:10px}
+label.f{display:block;margin:14px 0 6px;font-weight:700}
+.hint{font-size:13px;color:var(--muted);font-weight:400}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input[type=time],input[type=text],select{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:18px;min-width:0}
+input[type=time]{width:100%}
+.stepper{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;width:max-content}
+.stepper button{border:0;background:var(--bg);width:52px;height:52px;font-size:24px;cursor:pointer}
+.stepper output{min-width:64px;text-align:center;font-size:22px;font-weight:700}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.big{font-size:22px;font-weight:900}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;background:var(--acc);color:var(--acc-ink);font-weight:900;font-size:18px;cursor:pointer;margin-top:16px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.goal{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;cursor:pointer}
+.goal b{display:block;font-size:16px;margin-bottom:4px}
+.goal span{font-size:13px;color:var(--muted)}
+.goal[aria-pressed="true"]{border-color:var(--acc);background:var(--tint)}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px;margin:0}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0;font-weight:500}
+.status{font-size:14px;color:var(--muted);margin:8px 0}
+.status.err{color:var(--bad)}
+.headline{font-size:20px;font-weight:900;line-height:1.35;margin:10px 0 4px}
+.tag{display:inline-block;font-size:11px;font-weight:700;color:var(--acc);background:var(--tint);padding:2px 8px;border-radius:999px;margin-bottom:6px}
+.chart{width:100%;min-height:40px}
+details{margin-top:10px}
+summary{cursor:pointer;font-size:14px;color:var(--muted)}
+pre{font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;max-height:240px;white-space:pre-wrap;word-break:break-word}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
+nav.tabs button{flex:1;max-width:260px;border:0;border-radius:12px;padding:12px;background:var(--bg);font-weight:700;cursor:pointer}
+nav.tabs button[aria-current="true"]{background:var(--acc);color:var(--acc-ink)}
+.gcard{position:relative}
+.gcard .meta{font-size:13px;color:var(--muted);margin-bottom:4px}
+.vote{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer}
+.vote[aria-pressed="true"]{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+[hidden]{display:none!important}
+/* wall */
+body.wall .app{max-width:none;padding:24px 32px}
+.wallgrid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:24px;align-items:start}
+.join{position:sticky;top:24px}
+.join .qr{background:#fff;padding:14px;border-radius:16px;display:inline-block}
+.join .url{font-family:var(--mono);font-size:13px;word-break:break-all;color:var(--muted);margin:10px 0}
+.count{font-size:72px;font-weight:900;line-height:1;color:var(--acc)}
+.walltabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.walltabs button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:10px 18px;font-weight:700;cursor:pointer;font-size:16px}
+.walltabs button[aria-current="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.strips .card{padding:12px 16px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:16px}
+.admin{margin-top:16px;font-size:13px}
+.admin input{font-size:14px;padding:6px 8px;width:90px}
+.admin .btn{background:var(--acc);color:var(--acc-ink);border:0;font-size:16px;padding:12px;border-radius:12px;width:100%;font-weight:900}
+.admin button:not(.btn){font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer}
+.reveal{font-size:28px;font-weight:900}
+@media (max-width:820px){.wallgrid{grid-template-columns:1fr}.join{position:static}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">Mini <b>LIDA</b> · Class Lab</div>
+    <div class="row"><span id="demoBadge" class="pill" hidden>DEMO</span><button class="pill" id="langBtn">中文</button></div>
+  </header>
+
+  <!-- JOIN -->
+  <section id="v-join" hidden>
+    <h1 data-t="joinTitle"></h1>
+    <p class="lead" data-t="joinLead"></p>
+    <form id="joinForm" class="card" autocomplete="off">
+      <label class="f"><span data-t="qNick"></span></label>
+      <div class="row"><input type="text" id="nick" maxlength="20" style="flex:1"><button type="button" class="pill" id="reroll">🎲</button></div>
+
+      <label class="f"><span data-t="qScreen"></span> <span class="hint" data-t="qScreenHint"></span></label>
+      <div class="row"><span class="big" id="screenOut">4h 00m</span></div>
+      <input type="range" id="screen" min="0" max="960" step="5" value="240" aria-label="screen time minutes">
+
+      <label class="f" for="bed" data-t="qBed"></label>
+      <input type="time" id="bed" value="00:30" required>
+
+      <label class="f" data-t="qAlarms"></label>
+      <div class="stepper"><button type="button" id="alMinus" aria-label="minus">−</button><output id="alarms">1</output><button type="button" id="alPlus" aria-label="plus">+</button></div>
+
+      <label class="f" for="wake" data-t="qWake"></label>
+      <input type="time" id="wake" value="08:00" required>
+
+      <label class="f"><span data-t="qGuess"></span> <span class="hint" data-t="qGuessHint"></span></label>
+      <div class="row"><span class="big" id="guessOut">4h 00m</span></div>
+      <input type="range" id="guess" min="0" max="960" step="15" value="240" aria-label="guess minutes">
+
+      <button class="btn" type="submit" id="joinBtn" data-t="joinBtn"></button>
+      <div class="status" id="joinStatus"></div>
+    </form>
+  </section>
+
+  <!-- PLAY -->
+  <section id="v-play" hidden>
+    <h1 data-t="playTitle"></h1>
+    <p class="lead" data-t="playLead"></p>
+
+    <div class="card">
+      <div class="stage">Stage 1 · Summarizer</div>
+      <h2 data-t="s1Title"></h2>
+      <div class="who" data-t="s1Who"></div>
+      <dl class="facts" id="summaryFacts"></dl>
+    </div>
+
+    <div class="card">
+      <div class="stage">Stage 2 · Goal Explorer</div>
+      <h2 data-t="s2Title"></h2>
+      <div class="who" data-t="s2Who"></div>
+      <div id="goals"><div class="status" data-t="goalsLoading"></div></div>
+      <label class="f" for="custom" data-t="ownQ"></label>
+      <div class="row"><input type="text" id="custom" maxlength="160" style="flex:1"><button class="pill" id="customGo" data-t="ask"></button></div>
+    </div>
+
+    <div class="card" id="s3" hidden>
+      <div class="stage">Stage 3 · VisGenerator</div>
+      <h2 id="s3Q"></h2>
+      <div class="who" data-t="s3Who"></div>
+      <div class="status" id="s3Status"></div>
+      <div id="s3Out" hidden>
+        <span class="tag" data-t="aiHeadline"></span>
+        <div class="headline" id="s3Head"></div>
+        <div class="chart" id="s3Chart"></div>
+        <div class="status" id="s3Why"></div>
+        <details><summary data-t="seeSpec"></summary><pre id="s3Spec"></pre></details>
+        <button class="btn" id="publishBtn" data-t="publish"></button>
+        <button class="btn ghost" id="againBtn" data-t="again"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- THANKS (collect mode) -->
+  <section id="v-thanks" hidden>
+    <div class="card" style="text-align:center;padding:32px 16px">
+      <div style="font-size:72px;line-height:1" id="thanksEmoji">🎉</div>
+      <h1 data-t="thanksTitle"></h1>
+      <p class="lead" data-t="thanksLead"></p>
+      <div class="count" id="thanksCount" style="font-size:56px;font-weight:900;color:var(--acc)">–</div>
+      <div class="who" data-t="wallJoined"></div>
+      <button class="btn ghost" id="editBtn" data-t="edit"></button>
+    </div>
+  </section>
+
+  <!-- VOTE -->
+  <section id="v-vote" hidden>
+    <h1 data-t="voteTitle"></h1>
+    <p class="lead" data-t="voteLead"></p>
+    <div id="voteList"></div>
+  </section>
+
+  <!-- WALL -->
+  <section id="v-wall" hidden>
+    <div class="wallgrid">
+      <aside class="join card">
+        <div class="stage" data-t="wallScan"></div>
+        <div class="qr" id="qr"></div>
+        <div class="url" id="joinUrl"></div>
+        <div class="count" id="wallCount">0</div>
+        <div class="who" data-t="wallJoined"></div>
+        <div class="admin">
+          <button class="btn" id="csvBtn" data-t="csv" style="margin:0 0 12px"></button>
+          <div class="row"><input type="password" id="pin" placeholder="PIN"><button id="adGoals" data-t="adGoals" class="full-only"></button><button id="adReset" data-t="adReset"></button></div>
+          <div class="status" id="adStatus"></div>
+        </div>
+      </aside>
+      <main>
+        <div class="walltabs">
+          <button data-w="live" data-t="wLive"></button>
+          <button data-w="guess" data-t="wGuess"></button>
+          <button data-w="gallery" data-t="wGallery" class="full-only"></button>
+        </div>
+        <div id="w-live" class="strips"></div>
+        <div id="w-guess" hidden><div class="card"><div class="reveal" id="guessHead"></div><div class="chart" id="guessChart"></div></div></div>
+        <div id="w-gallery" hidden><div class="gallery" id="wallGallery"></div></div>
+      </main>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs" id="tabs" hidden>
+  <button data-go="play" data-t="tabPlay"></button>
+  <button data-go="vote" data-t="tabVote"></button>
+</nav>
+
+<script>
+/* ======================= CONFIG ======================= */
+const CONFIG = {
+  // Paste your Google Apps Script web-app URL (ends with /exec). Leave empty for DEMO mode.
+  API_URL: '',
+  // 'collect' = phones only submit data; the presenter makes charts with LIDA from the CSV.
+  // 'full'    = phones also run the Gemini mini-LIDA (Stage 1-3) and vote.
+  MODE: 'collect',
+};
+/* ====================================================== */
+
+const params = new URLSearchParams(location.search);
+const DEMO = !CONFIG.API_URL || params.has('demo');
+
+/* ---------- i18n ---------- */
+const T = {
+  en: {
+    joinTitle: 'Last night, in numbers', joinLead: 'Four quick answers from your phone. Anonymous: only your emoji nickname is shown.',
+    qNick: 'Your emoji nickname', qScreen: "Yesterday's screen time", qScreenHint: '(Settings → Screen Time / Digital Wellbeing)',
+    qBed: 'What time did you go to bed?', qAlarms: 'How many alarms did you set this morning?', qWake: 'What time did you get up?',
+    qGuess: 'Guess: class average screen time', qGuessHint: '(we reveal it later)', joinBtn: 'Send my data →', thanksTitle: 'Done! Look at the big screen 👀', thanksLead: 'Your answers are in. Find your animal on the screen.', edit: 'Edit my answers', csv: '⬇ Download CSV for LIDA',
+    sending: 'Sending…', sendFail: 'Could not send. Check Wi-Fi and try again.',
+    playTitle: 'Now you run LIDA', playLead: 'The AI goes through LIDA’s stages on our class data. Watch each stage.',
+    s1Title: 'The data, summarized', s1Who: 'Who: rules (code). No AI here.',
+    s2Title: 'What should we ask?', s2Who: 'Who: AI. Tap a question it proposed, or ask your own.',
+    goalsLoading: 'AI is reading the summary and thinking of questions…', ownQ: 'Or ask your own question', ask: 'Ask',
+    s3Who: 'Who: AI writes the chart spec, the browser draws it.',
+    thinking: 'AI is writing the chart spec… (5–15 s)', aiHeadline: 'AI’s headline', seeSpec: 'See what the AI wrote (Vega-Lite spec)',
+    publish: 'Send to the big screen 📺', published: 'On the big screen ✓', again: 'Try another question',
+    failGen: 'The AI failed to answer. Try again.', failRender: '✗ The AI wrote a spec, but it would not draw. In LIDA this counts as a failure (VER).',
+    voteTitle: 'Which chart is best?', voteLead: 'One vote each. You can change your vote.', vote: 'Vote', voted: 'Voted ✓', noCharts: 'No charts yet. Make one in “Play”.',
+    tabPlay: 'Play', tabVote: 'Vote',
+    wallScan: 'Scan to join', wallJoined: 'people have joined', adGoals: 'New AI questions', adReset: 'Reset all',
+    wLive: 'Live data', wGuess: 'Guess vs. truth', wGallery: 'AI charts',
+    people: 'people', avg: 'average', range: 'range', fScreen: 'Screen time', fBed: 'Bedtime', fWake: 'Wake-up', fSleep: 'Sleep', fAlarms: 'Alarms',
+    guessHead: (g, t) => `You guessed ${g} on average. The truth: ${t}.`,
+    by: 'by', votes: 'votes', confirmReset: 'Delete ALL data, charts and votes?',
+  },
+  zh: {
+    joinTitle: '昨晚的你，變成數字', joinLead: '用手機回答四題。匿名，只會顯示你的表情符號暱稱。',
+    qNick: '你的暱稱', qScreen: '昨天的螢幕使用時間', qScreenHint: '（設定 → 螢幕使用時間 / 數位健康）',
+    qBed: '昨晚幾點睡？', qAlarms: '今天早上設了幾個鬧鐘？', qWake: '今天幾點起床？',
+    qGuess: '猜猜看：全班平均螢幕時間', qGuessHint: '（等一下揭曉）', joinBtn: '送出我的資料 →', thanksTitle: '完成！請看大螢幕 👀', thanksLead: '資料已送出，在大螢幕上找找你的動物。', edit: '修改我的答案', csv: '⬇ 下載 CSV 給 LIDA',
+    sending: '傳送中…', sendFail: '傳送失敗，請檢查網路再試一次。',
+    playTitle: '換你來跑 LIDA', playLead: 'AI 會照 LIDA 的步驟處理全班資料，每一站都看得到。',
+    s1Title: '資料摘要', s1Who: '誰做：規則（程式），這一步沒有 AI。',
+    s2Title: '要問什麼？', s2Who: '誰做：AI。點一個它提的問題，或自己問。',
+    goalsLoading: 'AI 正在讀摘要、想問題…', ownQ: '或自己問一個問題', ask: '問',
+    s3Who: '誰做：AI 寫圖表規格，瀏覽器負責畫。',
+    thinking: 'AI 正在寫圖表規格…（約 5–15 秒）', aiHeadline: 'AI 下的標題', seeSpec: '看 AI 寫了什麼（Vega-Lite 規格）',
+    publish: '送上大螢幕 📺', published: '已送上大螢幕 ✓', again: '換一個問題',
+    failGen: 'AI 沒有回應，請再試一次。', failRender: '✗ AI 寫了規格，但畫不出來。在 LIDA 裡這算一次失敗（VER）。',
+    voteTitle: '哪一張圖最好？', voteLead: '每人一票，可以改票。', vote: '投票', voted: '已投 ✓', noCharts: '還沒有圖。先去「玩」做一張。',
+    tabPlay: '玩', tabVote: '投票',
+    wallScan: '掃描加入', wallJoined: '人已加入', adGoals: '重新產生 AI 問題', adReset: '全部清空',
+    wLive: '即時資料', wGuess: '猜測 vs 真相', wGallery: 'AI 畫的圖',
+    people: '人', avg: '平均', range: '範圍', fScreen: '螢幕時間', fBed: '就寢', fWake: '起床', fSleep: '睡眠', fAlarms: '鬧鐘',
+    guessHead: (g, t) => `大家平均猜 ${g}，實際是 ${t}。`,
+    by: '來自', votes: '票', confirmReset: '確定刪除所有資料、圖表和投票？',
+  },
+};
+let LANG = (() => { try { return localStorage.getItem('ml_lang') || (params.get('lang') === 'zh' ? 'zh' : 'en'); } catch (_) { return 'en'; } })();
+const t = k => T[LANG][k];
+function applyLang() {
+  document.documentElement.lang = LANG === 'zh' ? 'zh-Hant' : 'en';
+  document.querySelectorAll('[data-t]').forEach(el => { const v = t(el.dataset.t); if (typeof v === 'string') el.textContent = v; });
+  document.getElementById('langBtn').textContent = LANG === 'zh' ? 'EN' : '中文';
+  document.getElementById('custom').placeholder = LANG === 'zh' ? '例如：鬧鐘越多的人越晚起床嗎？' : 'e.g. Do people with more alarms wake up later?';
+}
+document.getElementById('langBtn').onclick = () => {
+  LANG = LANG === 'zh' ? 'en' : 'zh';
+  try { localStorage.setItem('ml_lang', LANG); } catch (_) {}
+  applyLang(); goalsCache = null; refresh();
+};
+
+/* ---------- identity ---------- */
+const ANIMALS = ['🐼 Panda','🦊 Fox','🐨 Koala','🐯 Tiger','🐸 Frog','🐧 Penguin','🦉 Owl','🐙 Octopus','🦄 Unicorn','🐳 Whale','🦥 Sloth','🐢 Turtle','🦔 Hedgehog','🐝 Bee','🦦 Otter','🐹 Hamster','🦩 Flamingo','🐲 Dragon','🐱 Cat','🐶 Dog','🦁 Lion','🐰 Bunny','🐻 Bear','🐷 Pig','🐮 Cow','🐵 Monkey','🦒 Giraffe','🦓 Zebra','🐘 Elephant','🦘 Kangaroo','🦭 Seal','🦜 Parrot','🦋 Butterfly','🐌 Snail','🦀 Crab','🐬 Dolphin','🦈 Shark','🐊 Croc','🦙 Llama','🐿️ Squirrel'];
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } }
+let ME = store('ml_id');
+if (!ME) { ME = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/-/g, ''); store('ml_id', ME); }
+const MEPID = ME.slice(0, 8);
+
+/* ---------- data helpers ---------- */
+const CLOCK_EXPR = "floor(datum.value % 24) + ':' + (round((datum.value % 1) * 60) < 10 ? '0' : '') + round((datum.value % 1) * 60)";
+const toHour = s => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? +m[1] + +m[2] / 60 : null; };
+function derive(r) {
+  const bed = toHour(r.bed), wake = toHour(r.wake);
+  if (bed == null || wake == null || r.screen_min === '' || r.alarms === '') return null;
+  const bedH = bed < 12 ? bed + 24 : bed;
+  let sleep = wake + 24 - bedH; while (sleep > 18) sleep -= 24; while (sleep < 0) sleep += 24;
+  return { nickname: r.nickname || '?', screen_hours: +(r.screen_min / 60).toFixed(2), bed_hour: +bedH.toFixed(2),
+    wake_hour: +wake.toFixed(2), sleep_hours: +sleep.toFixed(2), alarms: +r.alarms, me: r.pid === MEPID,
+    emoji: String(r.nickname || '?').split(' ')[0] };
+}
+function uniq() { const seen = {}; return r => { const k = r.nickname; seen[k] = (seen[k] || 0) + 1; if (seen[k] > 1) { r.nickname = k + ' ' + seen[k]; } return true; }; }
+const fmtHM = mins => `${Math.floor(mins / 60)}h ${String(Math.round(mins % 60)).padStart(2, '0')}m`;
+const fmtClock = h => { if (h == null) return '–'; h = ((h % 24) + 24) % 24; const hh = Math.floor(h), mm = Math.round((h - hh) * 60); return `${hh}:${String(mm).padStart(2, '0')}`; };
+const mean = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+
+/* ---------- API ---------- */
+async function api(action, payload = {}) {
+  if (DEMO) return demoApi(action, payload);
+  const res = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify(Object.assign({ action, lang: LANG }, payload)) });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || 'request failed');
+  return j;
+}
+
+/* ---------- DEMO backend (rehearsal / offline fallback, single device) ---------- */
+const demo = (() => {
+  const nick = ['🐼 Panda','🦊 Fox','🐨 Koala','🐯 Tiger','🐸 Frog','🐧 Penguin','🦉 Owl','🐙 Octopus','🦄 Unicorn','🐳 Whale','🦥 Sloth','🐢 Turtle','🦔 Hedgehog','🐝 Bee','🦦 Otter','🐹 Hamster','🦩 Flamingo'];
+  const beds = ['23:40','00:30','01:15','02:10','00:05','23:10','01:50','00:45','03:00','00:20','01:30','23:55','02:40','00:10','01:00','00:50','22:50'];
+  const wakes = ['07:30','08:10','09:00','10:20','07:50','07:00','09:40','08:30','11:10','08:00','09:15','07:40','10:30','08:20','08:45','08:05','06:50'];
+  const al = [1,3,5,2,1,0,6,2,4,1,3,1,7,2,2,1,0];
+  const sc = [230,310,420,515,190,150,480,260,600,240,390,210,555,280,330,270,120];
+  const gs = [240,300,360,180,240,300,420,300,240,360,300,240,480,270,300,330,200];
+  const rows = nick.map((n, i) => ({ pid: 'demo' + String(i).padStart(4, '0'), nickname: n, screen_min: sc[i], bed: beds[i], wake: wakes[i], alarms: al[i], guess_screen_min: gs[i] }));
+  return { rows, charts: [], votes: {} };
+})();
+const DEMO_GOALS = {
+  en: [
+    { question: 'Do people who set more alarms actually wake up later?', visualization: 'scatter: alarms × wake_hour', rationale: 'Tests the snooze paradox.' },
+    { question: 'Does more screen time mean going to bed later?', visualization: 'scatter: screen_hours × bed_hour', rationale: 'Phones vs. sleep.' },
+    { question: 'Who slept the least last night?', visualization: 'sorted bar: nickname × sleep_hours', rationale: 'Find the night owls.' },
+    { question: 'How many alarms does the class usually set?', visualization: 'histogram of alarms', rationale: 'See the typical habit.' },
+  ],
+  zh: [
+    { question: '鬧鐘設越多的人，真的越晚起床嗎？', visualization: '散佈圖：鬧鐘 × 起床時間', rationale: '驗證「貪睡悖論」。' },
+    { question: '螢幕時間越長，越晚睡嗎？', visualization: '散佈圖：螢幕時間 × 就寢時間', rationale: '手機和睡眠的關係。' },
+    { question: '昨晚誰睡最少？', visualization: '排序長條圖：暱稱 × 睡眠時數', rationale: '找出夜貓子。' },
+    { question: '全班通常設幾個鬧鐘？', visualization: '鬧鐘數量的直方圖', rationale: '看看大家的習慣。' },
+  ],
+};
+function demoSpec(q) {
+  const s = q.toLowerCase();
+  const ptColor = { condition: { test: 'datum.me', value: '#e8590c' }, value: '#0078d4' };
+  if (/alarm|鬧鐘/.test(s) && /wake|起床|later|晚/.test(s)) return {
+    spec: { mark: { type: 'circle', size: 160, opacity: .85 }, encoding: {
+      x: { field: 'alarms', type: 'quantitative', title: 'Alarms set' },
+      y: { field: 'wake_hour', type: 'quantitative', title: 'Wake-up hour', scale: { zero: false } },
+      color: ptColor, tooltip: [{ field: 'nickname' }, { field: 'alarms' }, { field: 'wake_hour' }] } },
+    headline: LANG === 'zh' ? '鬧鐘越多越賴床！設計所集體貪睡實錄' : 'More Alarms, Later Mornings: The Class Is Addicted to Snooze!',
+    rationale: LANG === 'zh' ? '兩個數字欄位的關係，用散佈圖最直接。' : 'A scatter plot shows the relationship between two numeric fields.' };
+  if (/least|sleep|睡最少|睡眠/.test(s)) return {
+    spec: { mark: 'bar', encoding: { y: { field: 'nickname', type: 'nominal', sort: 'x', title: null },
+      x: { field: 'sleep_hours', type: 'quantitative', title: 'Hours slept' }, color: ptColor } },
+    headline: LANG === 'zh' ? '睡不到五小時！夜貓子名單曝光' : 'Night Owls Exposed: Some of Us Slept Under 5 Hours!',
+    rationale: LANG === 'zh' ? '排序長條圖最容易比較每個人。' : 'A sorted bar chart makes ranking people easy.' };
+  return {
+    spec: { mark: { type: 'circle', size: 160, opacity: .85 }, encoding: {
+      x: { field: 'screen_hours', type: 'quantitative', title: 'Screen time (h)' },
+      y: { field: 'bed_hour', type: 'quantitative', title: 'Bedtime', scale: { zero: false }, axis: { labelExpr: CLOCK_EXPR } },
+      color: ptColor, tooltip: [{ field: 'nickname' }, { field: 'screen_hours' }] } },
+    headline: LANG === 'zh' ? '手機滑越久，睡越晚！' : 'Scroll Longer, Sleep Later!',
+    rationale: LANG === 'zh' ? '散佈圖可以看出兩個變數是否一起變化。' : 'A scatter plot reveals whether two variables move together.' };
+}
+async function demoApi(action, p) {
+  await new Promise(r => setTimeout(r, action === 'chart' ? 1200 : action === 'goals' ? 900 : 150));
+  if (action === 'submit') { const r = { pid: MEPID, nickname: p.nickname, screen_min: p.screen_min, bed: p.bed, wake: p.wake, alarms: p.alarms, guess_screen_min: p.guess_screen_min };
+    const i = demo.rows.findIndex(x => x.pid === MEPID); if (i >= 0) demo.rows[i] = r; else demo.rows.push(r); return { ok: true }; }
+  if (action === 'state') { const tally = {}; Object.values(demo.votes).forEach(c => tally[c] = (tally[c] || 0) + 1);
+    return { ok: true, rows: demo.rows, goals: null, charts: demo.charts.map(c => Object.assign({}, c, { votes: tally[c.cid] || 0 })), myVote: demo.votes[ME] || null }; }
+  if (action === 'goals') return { ok: true, goals: DEMO_GOALS[LANG] };
+  if (action === 'chart') return Object.assign({ ok: true }, demoSpec(p.question));
+  if (action === 'publish') { const cid = Math.random().toString(36).slice(2, 10); demo.charts.push({ cid, pid: MEPID, nickname: p.nickname, question: p.question, headline: p.headline, rationale: p.rationale, spec: p.spec }); return { ok: true, cid }; }
+  if (action === 'vote') { demo.votes[ME] = p.cid; return { ok: true }; }
+  if (action === 'admin') { if (p.op === 'reset') { demo.rows.length = 0; demo.charts.length = 0; demo.votes = {}; } return { ok: true, goals: DEMO_GOALS[LANG] }; }
+}
+
+/* ---------- chart rendering (AI specs are sandboxed: data injected, network blocked) ---------- */
+const blockedLoader = { load: () => Promise.reject(new Error('blocked')), sanitize: () => Promise.reject(new Error('blocked')), http: () => Promise.reject(new Error('blocked')), file: () => Promise.reject(new Error('blocked')) };
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function themeConfig(big) {
+  const ink = cssVar('--ink'), muted = cssVar('--muted'), line = cssVar('--line');
+  const fs = big ? 15 : 13;
+  return { background: null, font: cssVar('--font'),
+    axis: { labelColor: muted, titleColor: ink, domainColor: line, gridColor: line, tickColor: line, labelFontSize: fs, titleFontSize: fs + 1 },
+    legend: { labelColor: muted, titleColor: ink, labelFontSize: fs, titleFontSize: fs }, title: { color: ink, fontSize: fs + 3 },
+    view: { stroke: null }, range: { category: ['#0078d4', '#e8590c', '#107c41', '#8e44ad', '#c4314b', '#6b6b6b'] } };
+}
+async function renderSpec(el, rawSpec, rows, opt = {}) {
+  const spec = JSON.parse(JSON.stringify(rawSpec || {}));
+  ['data', 'datasets', '$schema', 'width', 'height', 'autosize', 'usermeta'].forEach(k => delete spec[k]);
+  spec.$schema = 'https://vega.github.io/schema/vega-lite/v5.json';
+  spec.data = { values: rows };
+  const multi = spec.hconcat || spec.vconcat || spec.concat || spec.facet || spec.repeat;
+  if (!multi) { spec.width = 'container'; spec.height = opt.height || 260; spec.autosize = { type: 'fit', contains: 'padding' }; }
+  spec.config = Object.assign(themeConfig(opt.big), spec.config || {});
+  el.innerHTML = '';
+  const res = await vegaEmbed(el, spec, { actions: false, renderer: 'svg', loader: blockedLoader });
+  return res;
+}
+
+/* ---------- views ---------- */
+const views = ['join', 'play', 'vote', 'wall', 'thanks'];
+const COLLECT = CONFIG.MODE !== 'full';
+let current = null, pollTimer = null, goalsCache = null, lastState = null, chosenQ = null, lastChart = null, goalsRequested = false;
+const joined = () => store('ml_joined') === '1';
+function go(v) {
+  const home = COLLECT ? 'thanks' : 'play';
+  if (COLLECT && (v === 'play' || v === 'vote')) v = 'thanks';
+  if (!COLLECT && v === 'thanks') v = 'play';
+  if (!views.includes(v)) v = joined() ? home : 'join';
+  if ((v === 'play' || v === 'vote' || v === 'thanks') && !joined()) v = 'join';
+  current = v;
+  views.forEach(k => document.getElementById('v-' + k).hidden = k !== v);
+  document.body.classList.toggle('wall', v === 'wall');
+  document.getElementById('tabs').hidden = !(v === 'play' || v === 'vote');
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.go === v ? 'true' : 'false'));
+  if (location.hash.slice(1) !== v) history.replaceState(null, '', location.pathname + location.search + '#' + v);
+  clearInterval(pollTimer);
+  refresh();
+  if (v === 'wall' || v === 'vote') pollTimer = setInterval(refresh, v === 'wall' ? 3000 : 4000);
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => go(b.dataset.go));
+
+async function refresh() {
+  try {
+    const st = await api('state', { voter: ME });
+    lastState = st;
+    if (current === 'play') renderPlay(st);
+    if (current === 'vote') renderVote(st);
+    if (current === 'wall') renderWall(st);
+    if (current === 'thanks') renderThanks(st);
+  } catch (e) { console.warn(e); }
+}
+
+/* JOIN */
+function pickNick() { const used = new Set(((lastState && lastState.rows) || []).map(r => r.nickname)); const free = ANIMALS.filter(a => !used.has(a)); const pool = free.length ? free : ANIMALS; return pool[Math.floor(Math.random() * pool.length)]; }
+const nickEl = document.getElementById('nick');
+nickEl.value = store('ml_nick') || pickNick();
+document.getElementById('reroll').onclick = () => { nickEl.value = pickNick(); };
+const screenEl = document.getElementById('screen'), guessEl = document.getElementById('guess');
+const syncRanges = () => { document.getElementById('screenOut').textContent = fmtHM(+screenEl.value); document.getElementById('guessOut').textContent = fmtHM(+guessEl.value); };
+screenEl.oninput = guessEl.oninput = syncRanges; syncRanges();
+let alarms = 1; const alEl = document.getElementById('alarms');
+document.getElementById('alMinus').onclick = () => { alarms = Math.max(0, alarms - 1); alEl.textContent = alarms; };
+document.getElementById('alPlus').onclick = () => { alarms = Math.min(30, alarms + 1); alEl.textContent = alarms; };
+document.getElementById('joinForm').onsubmit = async e => {
+  e.preventDefault();
+  const btn = document.getElementById('joinBtn'), st = document.getElementById('joinStatus');
+  btn.disabled = true; st.className = 'status'; st.textContent = t('sending');
+  try {
+    await api('submit', { id: ME, nickname: nickEl.value.trim() || pickNick(), screen_min: +screenEl.value,
+      bed: document.getElementById('bed').value, wake: document.getElementById('wake').value, alarms, guess_screen_min: +guessEl.value });
+    store('ml_nick', nickEl.value.trim()); store('ml_joined', '1');
+    store('ml_answers', JSON.stringify({ screen: screenEl.value, guess: guessEl.value, bed: document.getElementById('bed').value, wake: document.getElementById('wake').value, alarms }));
+    st.textContent = ''; go(COLLECT ? 'thanks' : 'play');
+  } catch (err) { st.className = 'status err'; st.textContent = t('sendFail'); }
+  btn.disabled = false;
+};
+
+/* PLAY */
+function summaryFacts(rows) {
+  const d = rows.map(derive).filter(Boolean).filter(uniq());
+  const f = (k, fmt) => { const xs = d.map(r => r[k]); if (!xs.length) return '–'; return `${fmt(Math.min(...xs))} – ${fmt(Math.max(...xs))} · ${t('avg')} ${fmt(mean(xs))}`; };
+  const h1 = x => x.toFixed(1) + 'h';
+  return [[t('people'), String(d.length)], [t('fScreen'), f('screen_hours', h1)], [t('fBed'), f('bed_hour', fmtClock)],
+    [t('fWake'), f('wake_hour', fmtClock)], [t('fSleep'), f('sleep_hours', h1)], [t('fAlarms'), f('alarms', x => (+x.toFixed(1)).toString())]];
+}
+function renderPlay(st) {
+  const dl = document.getElementById('summaryFacts');
+  dl.innerHTML = '';
+  summaryFacts(st.rows).forEach(([k, v]) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; dl.append(dt, dd); });
+  const goals = goalsCache || st.goals;
+  if (goals && goals.length) { goalsCache = goals; renderGoals(goals); }
+  else if (!goalsRequested) {
+    goalsRequested = true;
+    api('goals').then(r => { goalsCache = r.goals; renderGoals(r.goals); }).catch(() => {
+      document.getElementById('goals').innerHTML = `<div class="status err">${t('failGen')}</div>`; goalsRequested = false; });
+  }
+}
+function renderGoals(goals) {
+  const box = document.getElementById('goals'); box.innerHTML = '';
+  goals.forEach(g => {
+    const b = document.createElement('button'); b.className = 'goal'; b.type = 'button';
+    b.setAttribute('aria-pressed', chosenQ === g.question ? 'true' : 'false');
+    const q = document.createElement('b'); q.textContent = g.question;
+    const s = document.createElement('span'); s.textContent = `${g.visualization} · ${g.rationale}`;
+    b.append(q, s); b.onclick = () => ask(g.question); box.append(b);
+  });
+}
+document.getElementById('customGo').onclick = () => { const q = document.getElementById('custom').value.trim(); if (q) ask(q); };
+document.getElementById('custom').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('customGo').click(); } };
+document.getElementById('againBtn').onclick = () => { document.getElementById('goals').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+async function ask(q) {
+  chosenQ = q; if (goalsCache) renderGoals(goalsCache);
+  const s3 = document.getElementById('s3'); s3.hidden = false;
+  document.getElementById('s3Q').textContent = q;
+  const status = document.getElementById('s3Status'), out = document.getElementById('s3Out');
+  status.className = 'status'; status.textContent = t('thinking'); out.hidden = true;
+  s3.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  let r;
+  try { r = await api('chart', { question: q }); }
+  catch (e) { status.className = 'status err'; status.textContent = t('failGen'); return; }
+  const rows = (lastState ? lastState.rows : []).map(derive).filter(Boolean).filter(uniq());
+  out.hidden = false;
+  document.getElementById('s3Head').textContent = r.headline || '';
+  document.getElementById('s3Why').textContent = r.rationale || '';
+  document.getElementById('s3Spec').textContent = JSON.stringify(r.spec, null, 2);
+  const pub = document.getElementById('publishBtn'); pub.disabled = false; pub.textContent = t('publish');
+  try {
+    await renderSpec(document.getElementById('s3Chart'), r.spec, rows);
+    status.textContent = '';
+    lastChart = { question: q, spec: r.spec, headline: r.headline, rationale: r.rationale };
+  } catch (e) {
+    document.getElementById('s3Chart').innerHTML = '';
+    status.className = 'status err'; status.textContent = t('failRender');
+    pub.disabled = true; lastChart = null;
+  }
+}
+document.getElementById('publishBtn').onclick = async () => {
+  if (!lastChart) return;
+  const pub = document.getElementById('publishBtn'); pub.disabled = true;
+  try { await api('publish', Object.assign({ id: ME, nickname: store('ml_nick') || nickEl.value }, lastChart)); pub.textContent = t('published'); }
+  catch (e) { pub.disabled = false; }
+};
+
+/* VOTE + gallery cards */
+const rendered = new Map(); // cid -> {el, key}
+function chartCard(c, rows, opt) {
+  const card = document.createElement('div'); card.className = 'card gcard';
+  const meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = `${c.nickname} · ${c.question}`;
+  const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = t('aiHeadline');
+  const head = document.createElement('div'); head.className = 'headline'; head.textContent = c.headline || '';
+  const ch = document.createElement('div'); ch.className = 'chart';
+  card.append(meta, tag, head, ch);
+  renderSpec(ch, c.spec, rows, opt).catch(() => { ch.innerHTML = `<div class="status err">${t('failRender')}</div>`; });
+  const foot = document.createElement('div'); foot.className = 'row'; foot.style.marginTop = '8px'; foot.style.justifyContent = 'space-between';
+  const count = document.createElement('span'); count.className = 'big'; count.dataset.role = 'count';
+  foot.append(count); card.append(foot);
+  return card;
+}
+function syncCards(container, charts, rows, opt, withVote, myVote) {
+  if (!charts.length) { container.innerHTML = `<div class="empty">${t('noCharts')}</div>`; rendered.clear(); return; }
+  const empty = container.querySelector('.empty'); if (empty) empty.remove();
+  const sorted = charts.slice().sort((a, b) => b.votes - a.votes || (a.cid < b.cid ? -1 : 1));
+  sorted.forEach(c => {
+    const key = container.id + c.cid;
+    let entry = rendered.get(key);
+    if (!entry) {
+      const el = chartCard(c, rows, opt);
+      if (withVote) {
+        const b = document.createElement('button'); b.className = 'vote'; b.dataset.role = 'vote';
+        b.onclick = async () => { await api('vote', { voter: ME, cid: c.cid }); refresh(); };
+        el.querySelector('.row').append(b);
+      }
+      entry = { el }; rendered.set(key, entry);
+    }
+    entry.el.querySelector('[data-role=count]').textContent = `♥ ${c.votes}`;
+    const vb = entry.el.querySelector('[data-role=vote]');
+    if (vb) { const mine = myVote === c.cid; vb.setAttribute('aria-pressed', mine ? 'true' : 'false'); vb.textContent = mine ? t('voted') : t('vote'); }
+    container.append(entry.el); // re-append keeps order by votes
+  });
+}
+function renderVote(st) {
+  const rows = st.rows.map(derive).filter(Boolean).filter(uniq());
+  syncCards(document.getElementById('voteList'), st.charts || [], rows, {}, true, st.myVote);
+}
+
+/* WALL */
+const joinURL = location.origin + location.pathname + (DEMO && params.has('demo') ? '?demo' : '') + '#join';
+let qrDone = false, wallTab = 'live', liveKey = '';
+function renderWall(st) {
+  if (!qrDone && window.QRCode) { new QRCode(document.getElementById('qr'), { text: joinURL, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M }); qrDone = true; }
+  document.getElementById('joinUrl').textContent = joinURL;
+  const rows = st.rows.map(derive).filter(Boolean).filter(uniq());
+  document.getElementById('wallCount').textContent = rows.length;
+  const key = JSON.stringify(st.rows) + LANG;
+  if (wallTab === 'live' && key !== liveKey) { liveKey = key; renderStrips(rows); }
+  if (wallTab === 'guess') renderGuess(st.rows, rows);
+  if (wallTab === 'gallery') syncCards(document.getElementById('wallGallery'), st.charts || [], rows, { big: true, height: 300 }, false, null);
+}
+function renderStrips(rows) {
+  const box = document.getElementById('w-live'); box.innerHTML = '';
+  const defs = [
+    ['fScreen', 'screen_hours', { labelExpr: "datum.value + 'h'", tickCount: 8 }], ['fBed', 'bed_hour', { labelExpr: CLOCK_EXPR, tickCount: 8 }],
+    ['fWake', 'wake_hour', { labelExpr: CLOCK_EXPR, tickCount: 8 }], ['fSleep', 'sleep_hours', { labelExpr: "format(datum.value, '.1f') + 'h'", tickCount: 8 }],
+    ['fAlarms', 'alarms', { tickMinStep: 1, format: 'd' }]];
+  defs.forEach(([label, field, axis]) => {
+    const c = document.createElement('div'); c.className = 'card';
+    const h = document.createElement('div'); h.className = 'stage'; h.textContent = t(label);
+    const ch = document.createElement('div'); ch.className = 'chart';
+    c.append(h, ch); box.append(c);
+    const spec = { mark: { type: 'text', fontSize: 30, baseline: 'middle' },
+      encoding: { x: { field, type: 'quantitative', title: null, scale: { zero: false, nice: true, padding: 16 }, axis },
+        y: { field: 'jitter', type: 'quantitative', axis: null, scale: { domain: [-1, 1] } }, text: { field: 'emoji' },
+        tooltip: [{ field: 'nickname' }, { field }] }, transform: [{ calculate: 'random() * 1.4 - 0.7', as: 'jitter' }] };
+    renderSpec(ch, spec, rows, { big: true, height: 100 }).catch(() => {});
+  });
+}
+function renderGuess(raw, rows) {
+  const guesses = raw.filter(r => r.guess_screen_min !== '' && r.guess_screen_min != null).map(r => ({ nickname: r.nickname, guess_hours: +r.guess_screen_min / 60 }));
+  const truth = mean(rows.map(r => r.screen_hours));
+  const gAvg = mean(guesses.map(g => g.guess_hours));
+  document.getElementById('guessHead').textContent = (truth == null || gAvg == null) ? '–' : t('guessHead')(fmtHM(gAvg * 60), fmtHM(truth * 60));
+  const key = JSON.stringify(guesses) + truth + LANG;
+  const el = document.getElementById('guessChart');
+  if (el.dataset.key === key) return; el.dataset.key = key;
+  const spec = { layer: [
+    { mark: { type: 'tick', thickness: 4, size: 60, opacity: .7 }, encoding: { x: { field: 'guess_hours', type: 'quantitative', title: LANG === 'zh' ? '猜測的平均螢幕時間（小時）' : 'Guessed class average screen time (h)', scale: { zero: false } }, color: { value: cssVar('--muted') }, tooltip: [{ field: 'nickname' }, { field: 'guess_hours', format: '.1f' }] } },
+    { data: { values: [{ v: truth || 0 }] }, mark: { type: 'rule', strokeWidth: 5 }, encoding: { x: { field: 'v', type: 'quantitative' }, color: { value: cssVar('--acc') } } },
+    { data: { values: [{ v: truth || 0, l: LANG === 'zh' ? '真相' : 'truth' }] }, mark: { type: 'text', dy: -46, fontSize: 18, fontWeight: 'bold' }, encoding: { x: { field: 'v', type: 'quantitative' }, text: { field: 'l' }, color: { value: cssVar('--acc') } } } ] };
+  // layer-level data overrides the injected dataset for rule/text; ticks use guesses
+  const s = JSON.parse(JSON.stringify(spec)); s.data = { values: guesses };
+  el.innerHTML = '';
+  vegaEmbed(el, Object.assign(s, { $schema: 'https://vega.github.io/schema/vega-lite/v5.json', width: 'container', height: 160, autosize: { type: 'fit', contains: 'padding' }, config: themeConfig(true) }), { actions: false, renderer: 'svg', loader: blockedLoader }).catch(() => {});
+}
+document.querySelectorAll('.walltabs button').forEach(b => b.onclick = () => {
+  wallTab = b.dataset.w; liveKey = '';
+  document.querySelectorAll('.walltabs button').forEach(x => x.setAttribute('aria-current', x === b ? 'true' : 'false'));
+  ['live', 'guess', 'gallery'].forEach(k => document.getElementById('w-' + k).hidden = k !== wallTab);
+  if (lastState) renderWall(lastState);
+});
+document.querySelector('.walltabs button').setAttribute('aria-current', 'true');
+document.getElementById('adGoals').onclick = async () => {
+  const s = document.getElementById('adStatus'); s.textContent = '…';
+  try { await api('admin', { op: 'goals', pin: document.getElementById('pin').value }); s.textContent = '✓'; } catch (e) { s.textContent = e.message; }
+};
+document.getElementById('adReset').onclick = async () => {
+  if (!confirm(t('confirmReset'))) return;
+  const s = document.getElementById('adStatus'); s.textContent = '…';
+  try { await api('admin', { op: 'reset', pin: document.getElementById('pin').value }); s.textContent = '✓'; rendered.clear(); refresh(); } catch (e) { s.textContent = e.message; }
+};
+
+/* THANKS + CSV (collect mode) */
+function renderThanks(st) {
+  document.getElementById('thanksCount').textContent = st.rows.map(derive).filter(Boolean).length;
+  document.getElementById('thanksEmoji').textContent = String(store('ml_nick') || '🎉').split(' ')[0];
+}
+document.getElementById('editBtn').onclick = () => go('join');
+(function prefill() {
+  try {
+    const a = JSON.parse(store('ml_answers') || 'null'); if (!a) return;
+    screenEl.value = a.screen; guessEl.value = a.guess; document.getElementById('bed').value = a.bed; document.getElementById('wake').value = a.wake;
+    alarms = +a.alarms; alEl.textContent = alarms; syncRanges();
+  } catch (_) {}
+})();
+document.getElementById('csvBtn').onclick = () => {
+  const raw = (lastState && lastState.rows) || [];
+  const clock = h => { h = ((h % 24) + 24) % 24; const hh = Math.floor(h), mm = Math.round((h - hh) * 60) % 60; return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0'); };
+  const seen = {};
+  const lines = [['person', 'screen_time_hours', 'bedtime', 'bedtime_hour', 'alarms', 'wakeup_time', 'wakeup_hour', 'sleep_hours'].join(',')];
+  raw.forEach(r => {
+    const d = derive(r); if (!d) return;
+    let name = String(r.nickname || 'Anon').replace(/[^\x20-\x7E]/g, '').trim().replace(/,/g, ' ') || 'Anon';
+    seen[name] = (seen[name] || 0) + 1; if (seen[name] > 1) name += ' ' + seen[name];
+    lines.push([name, d.screen_hours.toFixed(2), clock(d.bed_hour), d.bed_hour.toFixed(2), d.alarms, clock(d.wake_hour), d.wake_hour.toFixed(2), d.sleep_hours.toFixed(2)].join(','));
+  });
+  const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'class_sleep_data.csv';
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+if (COLLECT) document.querySelectorAll('.full-only').forEach(el => el.hidden = true);
+
+/* boot */
+document.getElementById('demoBadge').hidden = !DEMO;
+applyLang();
+window.addEventListener('hashchange', () => go(location.hash.slice(1)));
+go(location.hash.slice(1));
+</script>
+</body>
+</html>
