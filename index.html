@@ -242,20 +242,20 @@ button.sh-chip{cursor:pointer;padding:8px 14px;gap:6px}
 #joinStatus{font-family:var(--sh-font);text-align:center}
 
 /* Done (frame 182:171) */
-.done{position:relative;min-height:100vh;max-width:440px;margin:0 auto;background:url(assets/atmosphere-done.svg) 50% 0/100% 874px no-repeat}
-.done-hero{position:relative;z-index:2;display:flex;align-items:center;gap:28px;padding:52px 24px 0}
+.done{position:relative;display:flow-root;min-height:100vh;max-width:440px;margin:0 auto;background:url(assets/atmosphere-done.svg) 50% 0/100% 874px no-repeat}
+/* Hero sits inside the sheet, centred under the handle; 24px rhythm handle → hero → card */
+.done-hero{display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:24px}
 .done-orb{position:relative;flex:none;width:58.776px;height:58.776px}
 .done-orb>span:first-child{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:999px;overflow:hidden;
   background:rgba(255,255,255,.55);border:1.2px solid #fff;font-size:48px;line-height:1}
 .done-badge{position:absolute;left:42.86px;top:41.63px;display:flex;align-items:center;justify-content:center;width:18.367px;height:18.367px;border-radius:999px;
   background:var(--sh-blue);border:3px solid #fff;overflow:hidden}
 .done-badge img{flex:none}
-.done-hero h1{font:800 30px/36px var(--sh-font);letter-spacing:-.45px}
-.done-hero p{margin-top:8px;font:400 15px/22px var(--sh-font);color:var(--sh-ink2)}
-.done-art{position:absolute;top:144px;left:calc(50% - 149px);width:294.87px;height:379px;overflow:hidden;pointer-events:none}
+.done-hero h1{font:800 34px/40px var(--sh-font);letter-spacing:-.6px}
+.done-art{position:absolute;top:36px;left:calc(50% - 149px);width:294.87px;height:379px;overflow:hidden;pointer-events:none}
 .done-art img{position:absolute;top:-13.65%;left:-56.21%;width:217.23%;height:126.19%;max-width:none}
-.done-sheet{--sheet-fill:.6;--sheet-hi:.6;--sheet-fade:15%;--sheet-blur:15px;margin-top:178px;padding:20px 20px var(--sh-reserve);min-height:calc(100vh - 318px)}
-.done-sheet .sh-handle{margin-bottom:29px}
+.done-sheet{--sheet-fill:.6;--sheet-hi:.6;--sheet-fade:15%;--sheet-blur:15px;margin-top:210px;padding:20px 20px var(--sh-reserve);min-height:calc(100vh - 210px)}
+.done-sheet .sh-handle{margin-bottom:24px}
 .done-head{display:flex;align-items:center;justify-content:space-between}
 .done-count{margin-top:14px;font-size:64px;line-height:58px;letter-spacing:-2.56px}
 .done-count small{font-size:22px;line-height:58px}
@@ -263,7 +263,7 @@ button.sh-chip{cursor:pointer;padding:8px 14px;gap:6px}
 .done-seats img{display:block;width:22px;height:22px}
 .done-seats img.you{width:27px;height:27px;margin:-2.5px}
 .done-note{margin-top:14px !important;font:400 13px/normal var(--sh-font);color:var(--sh-ink2)}
-.done-actions{display:flex;flex-direction:column;gap:12px;margin-top:41px}
+.done-actions{display:flex;flex-direction:column;gap:12px;margin-top:28px}
 .done-actions .sh-cta{max-width:none}
 </style>
 </head>
@@ -386,13 +386,13 @@ button.sh-chip{cursor:pointer;padding:8px 14px;gap:6px}
   <section id="v-thanks" hidden>
     <div class="done">
       <div class="sh-topbar"><span></span><button type="button" class="sh-chip lang-chip">中文</button></div>
-      <div class="done-hero">
-        <div class="done-orb"><span id="thanksEmoji">🎉</span><span class="done-badge"><img src="assets/icon-check-white.svg" width="16" height="16" alt=""></span></div>
-        <div><h1 data-t="thanksTitle"></h1><p><span data-t="thanksLead"></span><br><span data-t="thanksLead2"></span></p></div>
-      </div>
       <div class="done-art" aria-hidden="true"><img src="assets/sleepy-wave.png" alt="" width="1200" height="896"></div>
       <div class="sh-sheet done-sheet">
         <div class="sh-handle"><i></i><i></i><i class="on"></i></div>
+        <div class="done-hero">
+          <div class="done-orb"><span id="thanksEmoji">🎉</span><span class="done-badge"><img src="assets/icon-check-white.svg" width="16" height="16" alt=""></span></div>
+          <h1 data-t="thanksTitle"></h1>
+        </div>
         <div class="sh-card">
           <div class="done-head"><span class="sh-label" data-t="joined"></span><span class="sh-accent" data-t="live"></span></div>
           <div class="sh-big done-count"><span id="thanksCount">–</span><small id="thanksTotal"></small></div>
