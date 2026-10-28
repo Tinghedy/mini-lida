@@ -149,13 +149,15 @@ button.sh-chip{cursor:pointer;padding:8px 14px;gap:6px}
 
 /* Slider: 4px ink track, blue gradient fill up to the knob's centre (22px into the 56 × 44 knob). */
 .sh-slider{position:relative;height:44px}
-.sh-slider input{position:absolute;inset:0 0 auto;width:100%;height:28px;margin:0;background:none;-webkit-appearance:none;appearance:none;cursor:pointer;--p:0}
+.sh-slider input{position:absolute;inset:0 0 auto;width:100%;height:28px;margin:0;padding:0;border:0;box-shadow:none;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer;-webkit-tap-highlight-color:transparent;--p:0}
 .sh-slider input::-webkit-slider-runnable-track{height:4px;border-radius:2px;
   background:linear-gradient(90deg,#7fb6ea,var(--sh-blue)) 0 0/calc(22px + (100% - 56px) * var(--p)) 100% no-repeat,var(--sh-ink)}
-.sh-slider input::-webkit-slider-thumb{-webkit-appearance:none;width:56px;height:44px;margin-top:-20px;border:0;background:url(assets/knob.svg) 0 0/56px 44px no-repeat}
+/* Safari's own thumb paints a white disc with a shadow under the knob unless every part is reset */
+.sh-slider input::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:56px;height:44px;margin-top:-20px;border:0;border-radius:0;box-shadow:none;
+  background:transparent url(assets/knob.svg) 0 0/56px 44px no-repeat}
 .sh-slider input::-moz-range-track{height:4px;border-radius:2px;background:var(--sh-ink)}
 .sh-slider input::-moz-range-progress{height:4px;border-radius:2px;background:linear-gradient(90deg,#7fb6ea,var(--sh-blue))}
-.sh-slider input::-moz-range-thumb{width:56px;height:44px;border:0;border-radius:0;background:url(assets/knob.svg) 0 0/56px 44px no-repeat}
+.sh-slider input::-moz-range-thumb{width:56px;height:44px;border:0;border-radius:0;box-shadow:none;background:transparent url(assets/knob.svg) 0 0/56px 44px no-repeat}
 .sh-slider input:focus-visible{outline:none}
 .sh-slider input:focus-visible::-webkit-slider-thumb{outline:2px solid var(--sh-ink);outline-offset:-2px}
 .sh-scale{position:absolute;top:26px;left:0;right:0;display:flex;justify-content:space-between;font:400 12px/normal var(--sh-font);color:var(--sh-ink3);pointer-events:none}
