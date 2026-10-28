@@ -206,8 +206,17 @@ body.wall .app{max-width:none;padding:24px 32px}
       <p class="lead" data-t="thanksLead"></p>
       <div class="count" id="thanksCount" style="font-size:56px;font-weight:900;color:var(--acc)">–</div>
       <div class="who" data-t="wallJoined"></div>
+      <button class="btn" id="classBtn" data-t="seeClass"></button>
       <button class="btn ghost" id="editBtn" data-t="edit"></button>
     </div>
+  </section>
+
+  <!-- CLASS (collect mode): the wall's live strips, read-only and phone-sized; no admin, no guess reveal -->
+  <section id="v-class" hidden>
+    <h1 data-t="classTitle"></h1>
+    <p class="lead"><span data-t="classLead"></span> <b id="classCount">–</b> <span data-t="wallJoined"></span></p>
+    <div id="c-live" class="strips"></div>
+    <button class="btn ghost" id="classBack" data-t="back"></button>
   </section>
 
   <!-- VOTE -->
@@ -271,7 +280,8 @@ const T = {
     joinTitle: 'Last night, in numbers', joinLead: 'Four quick answers from your phone. Anonymous: only your emoji nickname is shown.',
     qNick: 'Your emoji nickname', qScreen: "Yesterday's screen time", qScreenHint: '(Settings → Screen Time / Digital Wellbeing)',
     qBed: 'What time did you go to bed?', qAlarms: 'How many alarms did you set this morning?', qWake: 'What time did you get up?',
-    qGuess: 'Guess: class average screen time', qGuessHint: '(we reveal it later)', joinBtn: 'Send my data →', thanksTitle: 'Done! Look at the big screen 👀', thanksLead: 'Your answers are in. Find your animal on the screen.', edit: 'Edit my answers', csv: '⬇ Download CSV for LIDA',
+    qGuess: 'Guess: class average screen time', qGuessHint: '(we reveal it later)', joinBtn: 'Send my data →', thanksTitle: 'Done! Look at the big screen 👀', thanksLead: 'Your answers are in. Find your animal on the screen.', edit: 'Edit my answers',
+    seeClass: "See everyone's night →", classTitle: "Everyone's night", classLead: 'Live from the class, updates by itself ·', back: '← Back', csv: '⬇ Download CSV for LIDA',
     sending: 'Sending…', sendFail: 'Could not send. Check Wi-Fi and try again.',
     playTitle: 'Now you run LIDA', playLead: 'The AI goes through LIDA’s stages on our class data. Watch each stage.',
     s1Title: 'The data, summarized', s1Who: 'Who: rules (code). No AI here.',
@@ -293,7 +303,8 @@ const T = {
     joinTitle: '昨晚的你，變成數字', joinLead: '用手機回答四題。匿名，只會顯示你的表情符號暱稱。',
     qNick: '你的暱稱', qScreen: '昨天的螢幕使用時間', qScreenHint: '（設定 → 螢幕使用時間 / 數位健康）',
     qBed: '昨晚幾點睡？', qAlarms: '今天早上設了幾個鬧鐘？', qWake: '今天幾點起床？',
-    qGuess: '猜猜看：全班平均螢幕時間', qGuessHint: '（等一下揭曉）', joinBtn: '送出我的資料 →', thanksTitle: '完成！請看大螢幕 👀', thanksLead: '資料已送出，在大螢幕上找找你的動物。', edit: '修改我的答案', csv: '⬇ 下載 CSV 給 LIDA',
+    qGuess: '猜猜看：全班平均螢幕時間', qGuessHint: '（等一下揭曉）', joinBtn: '送出我的資料 →', thanksTitle: '完成！請看大螢幕 👀', thanksLead: '資料已送出，在大螢幕上找找你的動物。', edit: '修改我的答案',
+    seeClass: '看看大家的狀態 →', classTitle: '全班的昨晚', classLead: '全班即時資料，會自動更新 ·', back: '← 回上一頁', csv: '⬇ 下載 CSV 給 LIDA',
     sending: '傳送中…', sendFail: '傳送失敗，請檢查網路再試一次。',
     playTitle: '換你來跑 LIDA', playLead: 'AI 會照 LIDA 的步驟處理全班資料，每一站都看得到。',
     s1Title: '資料摘要', s1Who: '誰做：規則（程式），這一步沒有 AI。',
@@ -445,7 +456,7 @@ async function renderSpec(el, rawSpec, rows, opt = {}) {
 }
 
 /* ---------- views ---------- */
-const views = ['join', 'play', 'vote', 'wall', 'thanks'];
+const views = ['join', 'play', 'vote', 'wall', 'thanks', 'class'];
 const COLLECT = CONFIG.MODE !== 'full';
 let current = null, pollTimer = null, goalsCache = null, lastState = null, chosenQ = null, lastChart = null, goalsRequested = false;
 const joined = () => store('ml_joined') === '1';
@@ -454,7 +465,7 @@ function go(v) {
   if (COLLECT && (v === 'play' || v === 'vote')) v = 'thanks';
   if (!COLLECT && v === 'thanks') v = 'play';
   if (!views.includes(v)) v = joined() ? home : 'join';
-  if ((v === 'play' || v === 'vote' || v === 'thanks') && !joined()) v = 'join';
+  if ((v === 'play' || v === 'vote' || v === 'thanks' || v === 'class') && !joined()) v = 'join';
   current = v;
   views.forEach(k => document.getElementById('v-' + k).hidden = k !== v);
   document.body.classList.toggle('wall', v === 'wall');
@@ -463,7 +474,8 @@ function go(v) {
   if (location.hash.slice(1) !== v) history.replaceState(null, '', location.pathname + location.search + '#' + v);
   clearInterval(pollTimer);
   refresh();
-  if (v === 'wall' || v === 'vote') pollTimer = setInterval(refresh, v === 'wall' ? 3000 : 4000);
+  // Phones on the class view poll slower than the wall: ~20 of them share one Apps Script backend.
+  if (v === 'wall' || v === 'vote' || v === 'class') pollTimer = setInterval(refresh, { wall: 3000, vote: 4000, class: 8000 }[v]);
   window.scrollTo(0, 0);
 }
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => go(b.dataset.go));
@@ -476,6 +488,7 @@ async function refresh() {
     if (current === 'vote') renderVote(st);
     if (current === 'wall') renderWall(st);
     if (current === 'thanks') renderThanks(st);
+    if (current === 'class') renderClass(st);
   } catch (e) { console.warn(e); }
 }
 
@@ -638,12 +651,12 @@ function renderWall(st) {
   const rows = st.rows.map(derive).filter(Boolean).filter(uniq());
   document.getElementById('wallCount').textContent = rows.length;
   const key = JSON.stringify(st.rows) + LANG;
-  if (wallTab === 'live' && key !== liveKey) { liveKey = key; renderStrips(rows); }
+  if (wallTab === 'live' && key !== liveKey) { liveKey = key; renderStrips(rows, document.getElementById('w-live'), true); }
   if (wallTab === 'guess') renderGuess(st.rows, rows);
   if (wallTab === 'gallery') syncCards(document.getElementById('wallGallery'), st.charts || [], rows, { big: true, height: 300 }, false, null);
 }
-function renderStrips(rows) {
-  const box = document.getElementById('w-live'); box.innerHTML = '';
+function renderStrips(rows, box, big) {
+  box.innerHTML = '';
   const defs = [
     ['fScreen', 'screen_hours', { labelExpr: "datum.value + 'h'", tickCount: 8 }], ['fBed', 'bed_hour', { labelExpr: CLOCK_EXPR, tickCount: 8 }],
     ['fWake', 'wake_hour', { labelExpr: CLOCK_EXPR, tickCount: 8 }], ['fSleep', 'sleep_hours', { labelExpr: "format(datum.value, '.1f') + 'h'", tickCount: 8 }],
@@ -653,11 +666,11 @@ function renderStrips(rows) {
     const h = document.createElement('div'); h.className = 'stage'; h.textContent = t(label);
     const ch = document.createElement('div'); ch.className = 'chart';
     c.append(h, ch); box.append(c);
-    const spec = { mark: { type: 'text', fontSize: 30, baseline: 'middle' },
+    const spec = { mark: { type: 'text', fontSize: big ? 30 : 22, baseline: 'middle' },
       encoding: { x: { field, type: 'quantitative', title: null, scale: { zero: false, nice: true, padding: 16 }, axis },
         y: { field: 'jitter', type: 'quantitative', axis: null, scale: { domain: [-1, 1] } }, text: { field: 'emoji' },
         tooltip: [{ field: 'nickname' }, { field }] }, transform: [{ calculate: 'random() * 1.4 - 0.7', as: 'jitter' }] };
-    renderSpec(ch, spec, rows, { big: true, height: 100 }).catch(() => {});
+    renderSpec(ch, spec, rows, { big, height: 100 }).catch(() => {});
   });
 }
 function renderGuess(raw, rows) {
@@ -700,6 +713,15 @@ function renderThanks(st) {
   document.getElementById('thanksEmoji').textContent = String(store('ml_nick') || '🎉').split(' ')[0];
 }
 document.getElementById('editBtn').onclick = () => go('join');
+document.getElementById('classBtn').onclick = () => go('class');
+document.getElementById('classBack').onclick = () => go('thanks');
+let classKey = '';
+function renderClass(st) {
+  const rows = st.rows.map(derive).filter(Boolean).filter(uniq());
+  document.getElementById('classCount').textContent = rows.length;
+  const key = JSON.stringify(st.rows) + LANG;  // redraw only on new data, so the dots don't jump every poll
+  if (key !== classKey) { classKey = key; renderStrips(rows, document.getElementById('c-live'), false); }
+}
 (function prefill() {
   try {
     const a = JSON.parse(store('ml_answers') || 'null'); if (!a) return;
