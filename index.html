@@ -6,9 +6,9 @@
 <title>Mini LIDA · Class Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
-<!-- Intro screen only: subset to its own words so phones download a few KB, not the whole Japanese font. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@800&display=swap&text=Who%E2%80%99s%20sleepyheadPoke%20this%20personPlay%20the%20game">
-<link rel="preload" as="image" href="assets/sleepy-asleep.jpg">
+<!-- Phone flow (intro, form, done) uses LINE Seed JP; Google serves it in unicode-range slices, so phones only fetch Latin. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@100;400;700;800&display=swap">
+<link rel="preload" as="image" href="assets/sleepy-asleep.png">
 <script src="https://cdn.jsdelivr.net/npm/vega@5.30.0/build/vega.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.21.0/build/vega-lite.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.26.0/build/vega-embed.min.js"></script>
@@ -96,31 +96,163 @@ body.wall .app{max-width:none;padding:24px 32px}
 .admin button:not(.btn){font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer}
 .reveal{font-size:28px;font-weight:900}
 @media (max-width:820px){.wallgrid{grid-template-columns:1fr}.join{position:static}}
-/* Join intro (Figma "Who's sleepyhead", 402px frame): a full-screen white cover over the form.
-   Poke → the sleeper wakes up → Play → the form. Always white, because the illustrations are. */
-/* Mobile browsers float their toolbars over the page (iOS Safari's bottom bar is ~90px), so the cover is sized to the
-   dynamic viewport, keeps --intro-bottom clear, and the art shrinks when the screen is shorter than the Figma frame. */
-.intro{--intro-top:clamp(20px,6dvh,94px);--intro-bottom:calc(96px + env(safe-area-inset-bottom));
-  position:fixed;top:0;left:0;right:0;height:100vh;height:100dvh;z-index:50;overflow-y:auto;background:#fff;color:#000;
-  display:flex;flex-direction:column;align-items:center;padding:var(--intro-top) 8px var(--intro-bottom)}
+/* ---------- Sleepyhead phone flow: intro → form → done (Figma "slot2", 402 × 874 frames) ----------
+   Light only: the illustrations and glass are drawn for a light canvas. Coordinates below are the Figma
+   ones minus the 54px iOS status bar. The "Sheet · glass" vector is rebuilt in CSS because its backdrop
+   blur and its height change per screen; fills, gradients and edge come from the exported SVG. */
+:root{--sh-canvas:#f4f6fb;--sh-ink:#0b1424;--sh-ink2:#4a5468;--sh-ink3:#687286;--sh-blue:#0078d4;--sh-tint:#deecf9;--sh-strong:#005a9e;
+  --sh-font:'LINE Seed JP',var(--font);
+  /* Mobile browsers float their toolbars over the page (iOS Safari's bottom bar is ~90px): keep that strip clear */
+  --sh-reserve:max(50px,calc(96px + env(safe-area-inset-bottom)))}
+body.sh{background:var(--sh-canvas);color:var(--sh-ink);color-scheme:light}
+.sh .app{max-width:none;padding:0}
+.sh header.top{display:none}
+.intro,.jf,.done{font-family:var(--sh-font);color:var(--sh-ink);-webkit-font-smoothing:antialiased}
+.intro p,.jf p,.done p,.jf h1,.done h1{margin:0}
+
+.sh-topbar{position:absolute;top:12px;left:16px;right:16px;height:40px;display:flex;align-items:center;justify-content:space-between;z-index:3}
+.sh-chip{display:inline-flex;align-items:center;gap:4px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.95);
+  font:700 13px/normal var(--sh-font);color:var(--sh-ink);white-space:nowrap}
+.sh-chip img{display:block}
+button.sh-chip{cursor:pointer;padding:8px 14px;gap:6px}
+.sh-iconbtn{display:flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;padding:0;border-radius:999px;cursor:pointer;
+  background:rgba(255,255,255,.42);border:1px solid rgba(255,255,255,.95)}
+.sh-iconbtn img{display:block}
+.sh-accent{display:inline-flex;padding:6px 12px;border-radius:999px;background:var(--sh-tint);font:700 12px/normal var(--sh-font);color:var(--sh-strong);white-space:nowrap}
+.sh-handle{display:flex;gap:6px;justify-content:center}
+.sh-handle i{display:block;width:20px;height:3px;border-radius:2px;background:var(--sh-ink)}
+.sh-handle i.on{width:36px}
+
+.sh-sheet{position:relative;--sheet-fill:.5;--sheet-hi:.55;--sheet-fade:35%;--sheet-blur:14px;
+  background:linear-gradient(180deg,rgba(255,255,255,var(--sheet-hi)) 0,rgba(255,255,255,.1) var(--sheet-fade)),rgba(255,255,255,var(--sheet-fill));
+  -webkit-backdrop-filter:blur(var(--sheet-blur));backdrop-filter:blur(var(--sheet-blur));
+  border-radius:50% 50% 0 0/33px 33px 0 0;box-shadow:inset 0 1.2px 0 rgba(255,255,255,.95),inset 1.2px 0 0 rgba(255,255,255,.5),inset -1.2px 0 0 rgba(255,255,255,.5)}
+
+.sh-cta{position:relative;display:flex;align-items:center;gap:12px;width:100%;max-width:362px;height:64px;padding:0 22px 0 6px;border-radius:999px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.95);background:linear-gradient(180deg,rgba(255,255,255,.28) 0,rgba(255,255,255,0) 50%),var(--sh-blue);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7);font:700 17px/normal var(--sh-font);color:#fff;transition:transform .12s}
+.sh-cta>span:first-child{flex:1;text-align:center}
+.sh-cta:active{transform:scale(.98)}
+.sh-cta:disabled{opacity:.6;cursor:default}
+.sh-cta:focus-visible,.sh-secondary:focus-visible,.sh-iconbtn:focus-visible,.sh-chip:focus-visible{outline:3px solid var(--sh-ink);outline-offset:3px}
+.sh-chevrons{display:flex}
+.sh-chevrons img{display:block;margin-right:-8px}
+.sh-chevrons img:last-child{margin-right:0}
+.sh-secondary{display:flex;align-items:center;justify-content:center;width:100%;height:56px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--sh-ink);background:rgba(255,255,255,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.8);font:700 16px/normal var(--sh-font);color:var(--sh-ink)}
+
+.sh-card{position:relative;padding:22px 20px;border-radius:28px;border:1px solid #fff;background:rgba(255,255,255,.66);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+.sh-label{display:block;font:700 15px/20px var(--sh-font);color:var(--sh-ink)}
+.sh-big{font:100 46px/50px var(--sh-font);letter-spacing:-1.38px;color:var(--sh-ink);white-space:nowrap}
+.sh-big small{font:400 18px/50px var(--sh-font);letter-spacing:normal;color:var(--sh-ink3)}
+
+/* Slider: 4px ink track, blue gradient fill up to the knob's centre (22px into the 56 × 44 knob). */
+.sh-slider{position:relative;height:44px}
+.sh-slider input{position:absolute;inset:0 0 auto;width:100%;height:28px;margin:0;background:none;-webkit-appearance:none;appearance:none;cursor:pointer;--p:0}
+.sh-slider input::-webkit-slider-runnable-track{height:4px;border-radius:2px;
+  background:linear-gradient(90deg,#7fb6ea,var(--sh-blue)) 0 0/calc(22px + (100% - 56px) * var(--p)) 100% no-repeat,var(--sh-ink)}
+.sh-slider input::-webkit-slider-thumb{-webkit-appearance:none;width:56px;height:44px;margin-top:-20px;border:0;background:url(assets/knob.svg) 0 0/56px 44px no-repeat}
+.sh-slider input::-moz-range-track{height:4px;border-radius:2px;background:var(--sh-ink)}
+.sh-slider input::-moz-range-progress{height:4px;border-radius:2px;background:linear-gradient(90deg,#7fb6ea,var(--sh-blue))}
+.sh-slider input::-moz-range-thumb{width:56px;height:44px;border:0;border-radius:0;background:url(assets/knob.svg) 0 0/56px 44px no-repeat}
+.sh-slider input:focus-visible{outline:none}
+.sh-slider input:focus-visible::-webkit-slider-thumb{outline:2px solid var(--sh-ink);outline-offset:-2px}
+.sh-scale{position:absolute;top:26px;left:0;right:0;display:flex;justify-content:space-between;font:400 12px/normal var(--sh-font);color:var(--sh-ink3);pointer-events:none}
+
+/* Intro: fixed cover sized to the dynamic viewport. Title anchored top, sheet + button anchored bottom,
+   the illustration takes what is left (426px tall on a full iPhone 17 frame) and shrinks on shorter screens. */
+.intro{--top:clamp(24px,calc(100dvh - 750px),70px);--art-top:calc(var(--top) + 128px);--sheet-h:100px;--art-gap:16px;
+  position:fixed;top:0;left:0;right:0;height:100vh;height:100dvh;z-index:50;overflow:hidden;
+  background:var(--sh-canvas) url(assets/atmosphere-intro.svg) 50% 0/100% 100% no-repeat}
 .intro[hidden]{display:none}
-.intro-title{margin:0;text-align:center;font-family:'LINE Seed JP',var(--font);font-weight:800;line-height:normal}
-.intro-title span{display:block}
-.intro-title .who{font-size:33.793px;line-height:46px}  /* line boxes measured from Figma; browsers size this font's "normal" smaller */
-.intro-title .sleepy{font-size:52.751px;line-height:72px}
-.intro-art{position:relative;flex:none;width:min(386px,100%);aspect-ratio:386/426;overflow:hidden;margin-top:4px}
-/* 165px = title (118) + button overhang (62 - 39) + art margins (14), with a little slack */
-@supports (height:1dvh){.intro-art{width:min(386px,100%,calc((100dvh - var(--intro-top) - var(--intro-bottom) - 165px) * 386 / 426))}}
+.intro.awake{--art-top:calc(var(--top) + 121px);--sheet-h:173px;--art-gap:-21px}
+.intro-head{position:absolute;top:var(--top);left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;z-index:2}
+.intro-who{font:800 30px/41px var(--sh-font);letter-spacing:-.3px}
+.intro-sleepy{font:800 58px/62px var(--sh-font);letter-spacing:-1.74px;white-space:nowrap}
+.intro-lead{font:400 15px/22px var(--sh-font);color:var(--sh-ink2);width:290px;max-width:calc(100% - 32px)}
+.intro-art{position:absolute;left:0;right:0;margin:0 auto;top:var(--art-top);aspect-ratio:386/426;overflow:hidden;pointer-events:none;
+  height:min(426px,calc(100vh - var(--sh-reserve) - var(--sheet-h) - var(--art-top) - var(--art-gap)));max-width:calc(100% - 16px)}
+@supports (height:1dvh){.intro-art{height:min(426px,calc(100dvh - var(--sh-reserve) - var(--sheet-h) - var(--art-top) - var(--art-gap)))}}
 .intro-art img{position:absolute;top:0;height:100%;width:147.6%;left:-24.35%;max-width:none}
-.intro-btn{position:relative;flex:none;width:251px;height:62px;margin-top:-31px;border:0;border-radius:50px;background:#a9d6f9;color:#000;
-  font-family:'LINE Seed JP',var(--font);font-weight:800;font-size:20px;line-height:normal;cursor:pointer;transition:transform .12s}
-.intro-btn:active{transform:scale(.96)}
-.intro-btn:focus-visible{outline:3px solid #000;outline-offset:3px}
-.intro.awake .intro-art{margin-top:14px}
+/* multiply sits on the box, not the img: the box clips (overflow) and would isolate the blend from the background */
+.intro.awake .intro-art{aspect-ratio:386/427;mix-blend-mode:multiply}
 .intro.awake .intro-art img{width:148.15%;left:-24.21%}
-.intro.awake .intro-btn{margin-top:-39px}
+.intro-sheet{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:18px;padding:36px 20px var(--sh-reserve);z-index:2}
+.intro-chips{display:flex;gap:6px}
+.intro:not(.awake) .intro-awake-only{display:none}
 @media (prefers-reduced-motion:no-preference){.intro.awake .intro-art img{animation:poke .4s ease-out}}
 @keyframes poke{0%,100%{transform:none}25%{transform:translateX(-6px) rotate(-1.5deg)}50%{transform:translateX(5px) rotate(1deg)}75%{transform:translateX(-2px)}}
+
+/* Form (frame 178:297): scrolls; the glass sheet starts under the title and runs to the bottom. */
+.jf{position:relative;min-height:100vh;max-width:440px;margin:0 auto;background:url(assets/atmosphere-form.svg) 50% 0/100% 1356px no-repeat}
+.jf .sh-topbar{top:10px;height:44px}
+.jf-art{position:absolute;top:38px;right:12px;width:150px;height:166px;overflow:hidden;pointer-events:none}
+.jf-art img{position:absolute;top:0;height:100%;width:147.6%;left:-24.35%;max-width:none;mix-blend-mode:multiply}
+.jf-head{position:relative;padding:60px 24px 0;display:flex;flex-direction:column;gap:6px}
+.jf-head h1{font:800 38px/44px var(--sh-font);letter-spacing:-.76px}
+.jf-head p{font:400 15px/22px var(--sh-font);color:var(--sh-ink2);width:200px}
+.jf-sheet{--sheet-fill:.6;--sheet-hi:.6;--sheet-fade:138px;--sheet-blur:15px;margin-top:16px;padding:20px 20px var(--sh-reserve);min-height:calc(100vh - 170px)}
+.jf-sheet .sh-handle{margin-bottom:35px}
+#joinForm{display:flex;flex-direction:column;gap:16px}
+.jf-nick{display:flex;align-items:center;gap:10px;margin-top:14px}
+.jf-orb{flex:none;display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:999px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.95);font-size:26px;line-height:1}
+.jf-nick input{flex:1;min-width:0;height:56px;padding:0 18px;border-radius:999px;border:1px solid var(--sh-ink);background:rgba(255,255,255,.85);
+  font:400 16px/normal var(--sh-font);color:var(--sh-ink)}
+.jf-nick input::placeholder{color:var(--sh-ink3)}
+.jf-nick input:focus{outline:2px solid var(--sh-blue);outline-offset:1px}
+.jf-dice{width:56px;height:56px}
+.sh-card .sh-big{margin-top:14px}
+.sh-card .sh-slider{margin-top:8px}
+.jf-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.jf-tile{position:relative;display:flex;flex-direction:column;gap:10px;padding:14px 16px 16px;border-radius:28px;cursor:pointer;min-width:0;
+  background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.95);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+.jf-tile-top{display:flex;align-items:center;gap:8px;font:400 13px/normal var(--sh-font);color:var(--sh-ink2);white-space:nowrap}
+.jf-badge{display:flex;align-items:center;justify-content:center;flex:none;width:30px;height:30px;border-radius:999px;background:var(--sh-tint)}
+.jf-time{display:flex;align-items:baseline;gap:4px;white-space:nowrap;font:100 36px/normal var(--sh-font);letter-spacing:-.72px;color:var(--sh-ink)}
+.jf-time small{font:400 15px/normal var(--sh-font);letter-spacing:normal;color:var(--sh-ink2)}
+.jf-tile input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;-webkit-appearance:none;appearance:none}
+.jf-tile:focus-within{outline:2px solid var(--sh-blue);outline-offset:2px}
+/* 9 PM → 11 AM, one tick an hour, long ticks every 3 h; ticks inside the sleep bar turn white */
+.jf-band{position:relative;height:40px;margin-top:14px}
+.jf-band .bar{position:absolute;top:6px;height:10px;border-radius:5px;background:linear-gradient(90deg,#7fb6ea,var(--sh-blue))}
+.jf-band .tick{position:absolute;top:7px;width:1.5px;height:8px;margin-left:-.75px;background:var(--sh-ink)}
+.jf-band .tick.major{top:4px;height:14px}
+.jf-band .tick.in{background:rgba(255,255,255,.75)}
+.jf-band .lbl{position:absolute;top:24px;font:400 11px/normal var(--sh-font);color:var(--sh-ink3);white-space:nowrap;transform:translateX(-50%)}
+.jf-band .lbl:first-of-type{transform:none}
+.jf-band .lbl.end{transform:translateX(-100%)}
+.jf-divider{display:block;width:100%;height:1px;margin:20px 0}
+.sh-stepper{display:inline-flex;align-items:center;gap:14px;padding:4px;margin-top:12px;border-radius:999px;border:1px solid rgba(255,255,255,.95);
+  background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+.sh-stepper output{width:24px;text-align:center;font:700 20px/normal var(--sh-font);color:var(--sh-ink)}
+.jf-send{max-width:none;margin-top:16px}
+#joinStatus{font-family:var(--sh-font);text-align:center}
+
+/* Done (frame 182:171) */
+.done{position:relative;min-height:100vh;max-width:440px;margin:0 auto;background:url(assets/atmosphere-done.svg) 50% 0/100% 874px no-repeat}
+.done-hero{position:relative;z-index:2;display:flex;align-items:center;gap:28px;padding:52px 24px 0}
+.done-orb{position:relative;flex:none;width:58.776px;height:58.776px}
+.done-orb>span:first-child{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:999px;overflow:hidden;
+  background:rgba(255,255,255,.55);border:1.2px solid #fff;font-size:48px;line-height:1}
+.done-badge{position:absolute;left:42.86px;top:41.63px;display:flex;align-items:center;justify-content:center;width:18.367px;height:18.367px;border-radius:999px;
+  background:var(--sh-blue);border:3px solid #fff;overflow:hidden}
+.done-badge img{flex:none}
+.done-hero h1{font:800 30px/36px var(--sh-font);letter-spacing:-.45px}
+.done-hero p{margin-top:8px;font:400 15px/22px var(--sh-font);color:var(--sh-ink2)}
+.done-art{position:absolute;top:144px;left:calc(50% - 149px);width:294.87px;height:379px;overflow:hidden;pointer-events:none}
+.done-art img{position:absolute;top:-13.65%;left:-56.21%;width:217.23%;height:126.19%;max-width:none}
+.done-sheet{--sheet-fill:.6;--sheet-hi:.6;--sheet-fade:15%;--sheet-blur:15px;margin-top:178px;padding:20px 20px var(--sh-reserve);min-height:calc(100vh - 318px)}
+.done-sheet .sh-handle{margin-bottom:29px}
+.done-head{display:flex;align-items:center;justify-content:space-between}
+.done-count{margin-top:14px;font-size:64px;line-height:58px;letter-spacing:-2.56px}
+.done-count small{font-size:22px;line-height:58px}
+.done-seats{display:grid;grid-template-columns:repeat(9,22px);column-gap:15px;row-gap:10px;margin-top:14px}
+.done-seats img{display:block;width:22px;height:22px}
+.done-seats img.you{width:27px;height:27px;margin:-2.5px}
+.done-note{margin-top:14px !important;font:400 13px/normal var(--sh-font);color:var(--sh-ink2)}
+.done-actions{display:flex;flex-direction:column;gap:12px;margin-top:41px}
+.done-actions .sh-cta{max-width:none}
 </style>
 </head>
 <body>
@@ -130,39 +262,74 @@ body.wall .app{max-width:none;padding:24px 32px}
     <div class="row"><span id="demoBadge" class="pill" hidden>DEMO</span><button class="pill" id="langBtn">中文</button></div>
   </header>
 
-  <!-- JOIN -->
+  <!-- JOIN: Sleepyhead intro (cover) over the form. Figma "slot2" frames 178:216, 172:82, 178:297. -->
   <section id="v-join" hidden>
     <div class="intro" id="intro">
-      <h2 class="intro-title"><span class="who">Who’s</span><span class="sleepy">sleepyhead</span></h2>
-      <div class="intro-art"><img id="introImg" src="assets/sleepy-asleep.jpg" alt="Someone fast asleep on a desk" width="1200" height="896"></div>
-      <button type="button" class="intro-btn" id="introBtn">Poke this person</button>
+      <div class="sh-topbar"><span></span><button type="button" class="sh-chip lang-chip">中文</button></div>
+      <div class="intro-head">
+        <p class="intro-who">Who’s</p>
+        <p class="intro-sleepy">sleepyhead</p>
+        <p class="intro-lead" data-t="introLead"></p>
+      </div>
+      <div class="intro-art"><img id="introImg" src="assets/sleepy-asleep.png" alt="Someone fast asleep on a desk" width="1200" height="896"></div>
+      <div class="sh-sheet intro-sheet">
+        <div class="sh-handle intro-awake-only"><i></i><i class="on"></i><i></i></div>
+        <div class="intro-chips intro-awake-only">
+          <span class="sh-chip"><img src="assets/icon-check.svg" width="16" height="16" alt=""><span data-t="chipQs"></span></span>
+          <span class="sh-chip"><img src="assets/icon-clock.svg" width="16" height="16" alt=""><span data-t="chipTime"></span></span>
+        </div>
+        <button type="button" class="sh-cta" id="introBtn"><span id="introBtnLabel" data-t="poke"></span></button>
+      </div>
     </div>
-    <h1 data-t="joinTitle"></h1>
-    <p class="lead" data-t="joinLead"></p>
-    <form id="joinForm" class="card" autocomplete="off">
-      <label class="f"><span data-t="qNick"></span></label>
-      <div class="row" style="flex-wrap:nowrap"><input type="text" id="nickEmoji" maxlength="12" aria-label="emoji" style="flex:none;width:3.2em;text-align:center;font-size:24px;padding:8px"><input type="text" id="nickName" maxlength="20" aria-label="name" placeholder="English name only" required pattern=".*\S.*" style="flex:1"><button type="button" class="pill" id="reroll">🎲</button></div>
 
-      <label class="f"><span data-t="qScreen"></span> <span class="hint" data-t="qScreenHint"></span></label>
-      <div class="row"><span class="big" id="screenOut">4h 00m</span></div>
-      <input type="range" id="screen" min="0" max="960" step="5" value="240" aria-label="screen time minutes">
-
-      <label class="f" for="bed" data-t="qBed"></label>
-      <input type="time" id="bed" value="00:30" required>
-
-      <label class="f" data-t="qAlarms"></label>
-      <div class="stepper"><button type="button" id="alMinus" aria-label="minus">−</button><output id="alarms">1</output><button type="button" id="alPlus" aria-label="plus">+</button></div>
-
-      <label class="f" for="wake" data-t="qWake"></label>
-      <input type="time" id="wake" value="08:00" required>
-
-      <label class="f"><span data-t="qGuess"></span> <span class="hint" data-t="qGuessHint"></span></label>
-      <div class="row"><span class="big" id="guessOut">4h 00m</span></div>
-      <input type="range" id="guess" min="0" max="960" step="15" value="240" aria-label="guess minutes">
-
-      <button class="btn" type="submit" id="joinBtn" data-t="joinBtn"></button>
-      <div class="status" id="joinStatus"></div>
-    </form>
+    <div class="jf">
+      <div class="sh-topbar">
+        <button type="button" class="sh-iconbtn" id="formBack" aria-label="Back"><img src="assets/icon-arrow-left.svg" width="22" height="22" alt=""></button>
+        <button type="button" class="sh-chip lang-chip">中文</button>
+      </div>
+      <div class="jf-art" aria-hidden="true"><img src="assets/sleepy-asleep.jpg" alt="" width="1200" height="896"></div>
+      <div class="jf-head"><h1 data-t="joinTitle"></h1><p data-t="joinLead"></p></div>
+      <div class="sh-sheet jf-sheet">
+        <div class="sh-handle"><i></i><i class="on"></i><i></i></div>
+        <form id="joinForm" autocomplete="off">
+          <div class="sh-card">
+            <div class="sh-label" data-t="qNick"></div>
+            <div class="jf-nick">
+              <div class="jf-orb" id="nickEmoji" role="img" aria-label="your icon"></div>
+              <input type="text" id="nickName" maxlength="20" aria-label="name" placeholder="English name only" required pattern=".*\S.*">
+              <button type="button" class="sh-iconbtn jf-dice" id="reroll" aria-label="Roll a new icon"><img src="assets/icon-dice.svg" width="22" height="22" alt=""></button>
+            </div>
+          </div>
+          <div class="sh-card">
+            <label class="sh-label" for="screen" data-t="qScreen"></label>
+            <div class="sh-big" id="screenOut"></div>
+            <div class="sh-slider"><input type="range" id="screen" min="0" max="960" step="5" value="240"><div class="sh-scale"><span>0h</span><span>16h</span></div></div>
+          </div>
+          <div class="sh-card">
+            <div class="sh-label" data-t="qWindow"></div>
+            <div class="jf-tiles">
+              <label class="jf-tile"><span class="jf-tile-top"><span class="jf-badge"><img src="assets/icon-moon.svg" width="18" height="18" alt=""></span><span data-t="qBed"></span></span><span class="jf-time" id="bedOut"></span><input type="time" id="bed" value="00:30" required></label>
+              <label class="jf-tile"><span class="jf-tile-top"><span class="jf-badge"><img src="assets/icon-sun.svg" width="18" height="18" alt=""></span><span data-t="qWake"></span></span><span class="jf-time" id="wakeOut"></span><input type="time" id="wake" value="08:00" required></label>
+            </div>
+            <div class="jf-band" id="band" aria-hidden="true"></div>
+            <img class="jf-divider" src="assets/divider.svg" width="320" height="1" alt="">
+            <div class="sh-label" data-t="qAlarms"></div>
+            <div class="sh-stepper">
+              <button type="button" class="sh-iconbtn" id="alMinus" aria-label="minus"><img src="assets/icon-minus.svg" width="22" height="22" alt=""></button>
+              <output id="alarms">1</output>
+              <button type="button" class="sh-iconbtn" id="alPlus" aria-label="plus"><img src="assets/icon-plus.svg" width="22" height="22" alt=""></button>
+            </div>
+          </div>
+          <div class="sh-card">
+            <label class="sh-label" for="guess" data-t="qGuess"></label>
+            <div class="sh-big" id="guessOut"></div>
+            <div class="sh-slider"><input type="range" id="guess" min="0" max="960" step="15" value="240"><div class="sh-scale"><span>0h</span><span>16h</span></div></div>
+          </div>
+          <button class="sh-cta jf-send" type="submit" id="joinBtn"><span data-t="joinBtn"></span></button>
+          <div class="status" id="joinStatus"></div>
+        </form>
+      </div>
+    </div>
   </section>
 
   <!-- PLAY -->
@@ -203,16 +370,28 @@ body.wall .app{max-width:none;padding:24px 32px}
     </div>
   </section>
 
-  <!-- THANKS (collect mode) -->
+  <!-- THANKS (collect mode). Figma frame 182:171 "Done". -->
   <section id="v-thanks" hidden>
-    <div class="card" style="text-align:center;padding:32px 16px">
-      <div style="font-size:72px;line-height:1" id="thanksEmoji">🎉</div>
-      <h1 data-t="thanksTitle"></h1>
-      <p class="lead" data-t="thanksLead"></p>
-      <div class="count" id="thanksCount" style="font-size:56px;font-weight:900;color:var(--acc)">–</div>
-      <div class="who" data-t="wallJoined"></div>
-      <button class="btn" id="classBtn" data-t="seeClass"></button>
-      <button class="btn ghost" id="editBtn" data-t="edit"></button>
+    <div class="done">
+      <div class="sh-topbar"><span></span><button type="button" class="sh-chip lang-chip">中文</button></div>
+      <div class="done-hero">
+        <div class="done-orb"><span id="thanksEmoji">🎉</span><span class="done-badge"><img src="assets/icon-check-white.svg" width="16" height="16" alt=""></span></div>
+        <div><h1 data-t="thanksTitle"></h1><p><span data-t="thanksLead"></span><br><span data-t="thanksLead2"></span></p></div>
+      </div>
+      <div class="done-art" aria-hidden="true"><img src="assets/sleepy-wave.png" alt="" width="1200" height="896"></div>
+      <div class="sh-sheet done-sheet">
+        <div class="sh-handle"><i></i><i></i><i class="on"></i></div>
+        <div class="sh-card">
+          <div class="done-head"><span class="sh-label" data-t="joined"></span><span class="sh-accent" data-t="live"></span></div>
+          <div class="sh-big done-count"><span id="thanksCount">–</span><small id="thanksTotal"></small></div>
+          <div class="done-seats" id="seats"></div>
+          <p class="done-note" id="seatNote"></p>
+        </div>
+        <div class="done-actions">
+          <button type="button" class="sh-cta" id="classBtn"><span data-t="seeClass"></span><span class="sh-chevrons" aria-hidden="true"><img src="assets/chevron-1.svg" width="16" height="16" alt=""><img src="assets/chevron-2.svg" width="16" height="16" alt=""><img src="assets/chevron-3.svg" width="16" height="16" alt=""></span></button>
+          <button type="button" class="sh-secondary" id="editBtn"><span data-t="edit"></span></button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -273,6 +452,8 @@ const CONFIG = {
   // 'collect' = phones only submit data; the presenter makes charts with LIDA from the CSV.
   // 'full'    = phones also run the Gemini mini-LIDA (Stage 1-3) and vote.
   MODE: 'collect',
+  // How many seats the phone's "Classmates joined" pictogram shows (it grows if more people join).
+  CLASS_SIZE: 18,
 };
 /* ====================================================== */
 
@@ -282,11 +463,14 @@ const DEMO = !CONFIG.API_URL || params.has('demo');
 /* ---------- i18n ---------- */
 const T = {
   en: {
-    joinTitle: 'Last night, in numbers', joinLead: 'Four quick answers from your phone. Anonymous: only your emoji nickname is shown.',
+    joinTitle: 'Last night', joinLead: 'Four quick answers from your phone.',
+    introLead: 'Tell us about last night. LIDA charts the whole class, live.', poke: 'Poke this man', play: 'Play the game',
+    chipQs: '4 questions', chipTime: 'takes YOU 1 min', namePh: 'English name only', qWindow: 'Sleep window',
     qNick: 'Your emoji nickname', qScreen: "Yesterday's screen time", qScreenHint: '(Settings → Screen Time / Digital Wellbeing)',
-    qBed: 'What time did you go to bed?', qAlarms: 'How many alarms did you set this morning?', qWake: 'What time did you get up?',
-    qGuess: 'Guess: class average screen time', qGuessHint: '(we reveal it later)', joinBtn: 'Send my data →', thanksTitle: 'Done! Look at the big screen 👀', thanksLead: 'Your answers are in. Find your animal on the screen.', edit: 'Edit my answers',
-    seeClass: "See everyone's night →", classTitle: "Everyone's night", classLead: 'Live from the class, updates by itself ·', back: '← Back', csv: '⬇ Download CSV for LIDA',
+    qBed: 'Went to bed', qAlarms: 'Alarms you set this morning', qWake: 'Got up',
+    qGuess: 'Guess the class average', qGuessHint: '(we reveal it later)', joinBtn: 'Send my data', thanksTitle: 'Done!', thanksLead: 'Your answers are in.', thanksLead2: 'Thanks for ur participation~~~~~~', edit: 'Edit my answers',
+    joined: 'Classmates joined', live: '● Live', waitMore: n => `You’re the first dot. Waiting for ${n} more…`, allIn: 'Everyone’s in. Look at the big screen!',
+    seeClass: 'See everyone’s night', classTitle: "Everyone's night", classLead: 'Live from the class, updates by itself ·', back: '← Back', csv: '⬇ Download CSV for LIDA',
     sending: 'Sending…', sendFail: 'Could not send. Check Wi-Fi and try again.',
     playTitle: 'Now you run LIDA', playLead: 'The AI goes through LIDA’s stages on our class data. Watch each stage.',
     s1Title: 'The data, summarized', s1Who: 'Who: rules (code). No AI here.',
@@ -305,11 +489,14 @@ const T = {
     by: 'by', votes: 'votes', confirmReset: 'Delete ALL data, charts and votes?',
   },
   zh: {
-    joinTitle: '昨晚的你，變成數字', joinLead: '用手機回答四題。匿名，只會顯示你的表情符號暱稱。',
+    joinTitle: '昨晚', joinLead: '用手機快速回答四個問題。',
+    introLead: '說說你昨晚睡得怎樣，LIDA 會即時畫出全班的圖。', poke: '戳醒他', play: '開始玩',
+    chipQs: '4 題', chipTime: '只要你 1 分鐘', namePh: '請用英文名字', qWindow: '睡眠時段',
     qNick: '你的暱稱', qScreen: '昨天的螢幕使用時間', qScreenHint: '（設定 → 螢幕使用時間 / 數位健康）',
-    qBed: '昨晚幾點睡？', qAlarms: '今天早上設了幾個鬧鐘？', qWake: '今天幾點起床？',
-    qGuess: '猜猜看：全班平均螢幕時間', qGuessHint: '（等一下揭曉）', joinBtn: '送出我的資料 →', thanksTitle: '完成！請看大螢幕 👀', thanksLead: '資料已送出，在大螢幕上找找你的動物。', edit: '修改我的答案',
-    seeClass: '看看大家的狀態 →', classTitle: '全班的昨晚', classLead: '全班即時資料，會自動更新 ·', back: '← 回上一頁', csv: '⬇ 下載 CSV 給 LIDA',
+    qBed: '幾點睡', qAlarms: '今天早上設了幾個鬧鐘', qWake: '幾點起床',
+    qGuess: '猜猜全班平均', qGuessHint: '（等一下揭曉）', joinBtn: '送出我的資料', thanksTitle: '完成！', thanksLead: '資料已送出。', thanksLead2: '謝謝你的參與～～～～～～', edit: '修改我的答案',
+    joined: '已加入的同學', live: '● 即時', waitMore: n => `第一個點就是你，還在等 ${n} 個人…`, allIn: '全員到齊，請看大螢幕！',
+    seeClass: '看看大家的狀態', classTitle: '全班的昨晚', classLead: '全班即時資料，會自動更新 ·', back: '← 回上一頁', csv: '⬇ 下載 CSV 給 LIDA',
     sending: '傳送中…', sendFail: '傳送失敗，請檢查網路再試一次。',
     playTitle: '換你來跑 LIDA', playLead: 'AI 會照 LIDA 的步驟處理全班資料，每一站都看得到。',
     s1Title: '資料摘要', s1Who: '誰做：規則（程式），這一步沒有 AI。',
@@ -333,9 +520,12 @@ const t = k => T[LANG][k];
 function applyLang() {
   document.documentElement.lang = LANG === 'zh' ? 'zh-Hant' : 'en';
   document.querySelectorAll('[data-t]').forEach(el => { const v = t(el.dataset.t); if (typeof v === 'string') el.textContent = v; });
-  document.getElementById('langBtn').textContent = LANG === 'zh' ? 'EN' : '中文';
+  document.querySelectorAll('#langBtn, .lang-chip').forEach(b => b.textContent = LANG === 'zh' ? 'EN' : '中文');
+  document.getElementById('nickName').placeholder = t('namePh');
+  if (typeof syncTimes === 'function') syncTimes();
   document.getElementById('custom').placeholder = LANG === 'zh' ? '例如：鬧鐘越多的人越晚起床嗎？' : 'e.g. Do people with more alarms wake up later?';
 }
+document.querySelectorAll('.lang-chip').forEach(b => b.onclick = () => document.getElementById('langBtn').click());
 document.getElementById('langBtn').onclick = () => {
   LANG = LANG === 'zh' ? 'en' : 'zh';
   try { localStorage.setItem('ml_lang', LANG); } catch (_) {}
@@ -474,6 +664,7 @@ function go(v) {
   current = v;
   views.forEach(k => document.getElementById('v-' + k).hidden = k !== v);
   document.body.classList.toggle('wall', v === 'wall');
+  document.body.classList.toggle('sh', v === 'join' || v === 'thanks');
   document.getElementById('tabs').hidden = !(v === 'play' || v === 'vote');
   document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.go === v ? 'true' : 'false'));
   if (location.hash.slice(1) !== v) history.replaceState(null, '', location.pathname + location.search + '#' + v);
@@ -503,24 +694,63 @@ function pickEmoji() { const used = new Set(((lastState && lastState.rows) || []
 // The dice only rolls the icon; the name is typed. Both are stored as one "emoji name" string, which the wall and CSV already split.
 const nickEmojiEl = document.getElementById('nickEmoji'), nickNameEl = document.getElementById('nickName');
 const saved = String(store('ml_nick') || '').split(' ');
-nickEmojiEl.value = saved[0] || pickEmoji(); nickNameEl.value = saved.slice(1).join(' ');
-function getNick() { return `${nickEmojiEl.value.replace(/\s/g, '') || pickEmoji()} ${nickNameEl.value.trim()}`; }
-document.getElementById('reroll').onclick = () => { nickEmojiEl.value = pickEmoji(); };
-const intro = document.getElementById('intro'), introImg = document.getElementById('introImg'), introBtn = document.getElementById('introBtn');
+nickEmojiEl.textContent = saved[0] || pickEmoji(); nickNameEl.value = saved.slice(1).join(' ');
+function getNick() { return `${nickEmojiEl.textContent.trim() || pickEmoji()} ${nickNameEl.value.trim()}`; }
+document.getElementById('reroll').onclick = () => { nickEmojiEl.textContent = pickEmoji(); };
+// Intro: Poke wakes the sleeper (and shows the step handle + chips), Play reveals the form underneath.
+const intro = document.getElementById('intro'), introImg = document.getElementById('introImg'), introLabel = document.getElementById('introBtnLabel');
 intro.hidden = joined();  // people coming back to edit their answers skip the intro
 new Image().src = 'assets/sleepy-awake.jpg';  // so the wake-up swap is instant
-introBtn.onclick = () => {
+document.getElementById('introBtn').onclick = () => {
   if (!intro.classList.contains('awake')) {
     intro.classList.add('awake');
     introImg.src = 'assets/sleepy-awake.jpg'; introImg.alt = 'The same person, just woken up and rubbing their eyes';
-    introBtn.textContent = 'Play the game';
+    introLabel.dataset.t = 'play'; introLabel.textContent = t('play');
     return;
   }
   intro.hidden = true; window.scrollTo(0, 0);
 };
+document.getElementById('formBack').onclick = () => { intro.hidden = false; };
+// Big numbers are drawn as "4h 00m" with thin digits and small units, like the Figma.
+const hmHTML = m => { m = Math.round(m); return `${Math.floor(m / 60)}<small>h</small> ${String(m % 60).padStart(2, '0')}<small>m</small>`; };
 const screenEl = document.getElementById('screen'), guessEl = document.getElementById('guess');
-const syncRanges = () => { document.getElementById('screenOut').textContent = fmtHM(+screenEl.value); document.getElementById('guessOut').textContent = fmtHM(+guessEl.value); };
+const syncRanges = () => {
+  [[screenEl, 'screenOut'], [guessEl, 'guessOut']].forEach(([el, out]) => {
+    document.getElementById(out).innerHTML = hmHTML(+el.value);
+    el.style.setProperty('--p', (el.value - el.min) / (el.max - el.min));
+  });
+};
 screenEl.oninput = guessEl.oninput = syncRanges; syncRanges();
+// Sleep window: two time tiles (native picker underneath) and a 9 PM → 11 AM band.
+const bedEl = document.getElementById('bed'), wakeEl = document.getElementById('wake');
+const BAND_START = 21, BAND_HOURS = 14;
+const timeHTML = v => { const [hh, mm] = String(v || '00:00').split(':').map(Number); return `${hh % 12 || 12}:${String(mm).padStart(2, '0')}<small>${hh < 12 ? 'AM' : 'PM'}</small>`; };
+function syncTimes() {
+  document.getElementById('bedOut').innerHTML = timeHTML(bedEl.value);
+  document.getElementById('wakeOut').innerHTML = timeHTML(wakeEl.value);
+  // Bedtimes before noon are after midnight; wake-ups before 9 PM are the next morning.
+  const clamp = x => Math.min(1, Math.max(0, (x - BAND_START) / BAND_HOURS));
+  const bedH = toHour(bedEl.value) || 0, wakeH = toHour(wakeEl.value) || 0;
+  const from = clamp(bedH < 12 ? bedH + 24 : bedH), to = Math.max(from, clamp(wakeH < BAND_START ? wakeH + 24 : wakeH));
+  const pct = x => (x * 100).toFixed(3) + '%';
+  let html = `<div class="bar" style="left:${pct(from)};width:${pct(to - from)}"></div>`;
+  for (let i = 0; i <= BAND_HOURS; i++) {
+    const x = i / BAND_HOURS, inside = x > from && x < to;
+    html += `<div class="tick${i % 3 === 0 && i < BAND_HOURS ? ' major' : ''}${inside ? ' in' : ''}" style="left:${pct(x)}"></div>`;
+  }
+  const labels = LANG === 'zh' ? ['21:00', '0:00', '6:00', '11:00'] : ['9 PM', '12 AM', '6 AM', '11 AM'];
+  [[0, 0], [3, 1], [9, 2], [14, 3]].forEach(([hrs, k]) => {
+    html += `<span class="lbl${hrs === BAND_HOURS ? ' end' : ''}" style="left:${pct(hrs / BAND_HOURS)}">${labels[k]}</span>`;
+  });
+  document.getElementById('band').innerHTML = html;
+}
+bedEl.oninput = bedEl.onchange = wakeEl.oninput = wakeEl.onchange = syncTimes;
+// Tapping anywhere on a tile opens the picker on desktop browsers too (phones open it from the input itself).
+document.querySelectorAll('.jf-tile').forEach(tile => tile.addEventListener('click', e => {
+  const input = tile.querySelector('input');
+  if (e.target !== input) { try { input.showPicker(); } catch (_) { input.focus(); } }
+}));
+syncTimes();
 let alarms = 1; const alEl = document.getElementById('alarms');
 document.getElementById('alMinus').onclick = () => { alarms = Math.max(0, alarms - 1); alEl.textContent = alarms; };
 document.getElementById('alPlus').onclick = () => { alarms = Math.min(30, alarms + 1); alEl.textContent = alarms; };
@@ -727,8 +957,15 @@ document.getElementById('adReset').onclick = async () => {
 
 /* THANKS + CSV (collect mode) */
 function renderThanks(st) {
-  document.getElementById('thanksCount').textContent = st.rows.map(derive).filter(Boolean).length;
+  const n = st.rows.map(derive).filter(Boolean).length, total = Math.max(CONFIG.CLASS_SIZE || 18, n);
+  document.getElementById('thanksCount').textContent = n;
+  document.getElementById('thanksTotal').textContent = ` /${total}`;
   document.getElementById('thanksEmoji').textContent = String(store('ml_nick') || '🎉').split(' ')[0];
+  // One seat per classmate: you first, then everyone else who joined, then dashed empty seats.
+  document.getElementById('seats').innerHTML = Array.from({ length: total }, (_, i) =>
+    i === 0 ? '<img class="you" src="assets/seat-you.svg" alt="">' :
+    i < n ? '<img src="assets/seat-joined.svg" alt="">' : '<img src="assets/seat-waiting.png" alt="">').join('');
+  document.getElementById('seatNote').textContent = n < total ? t('waitMore')(total - n) : t('allIn');
 }
 document.getElementById('editBtn').onclick = () => go('join');
 document.getElementById('classBtn').onclick = () => go('class');
@@ -744,7 +981,7 @@ function renderClass(st) {
   try {
     const a = JSON.parse(store('ml_answers') || 'null'); if (!a) return;
     screenEl.value = a.screen; guessEl.value = a.guess; document.getElementById('bed').value = a.bed; document.getElementById('wake').value = a.wake;
-    alarms = +a.alarms; alEl.textContent = alarms; syncRanges();
+    alarms = +a.alarms; alEl.textContent = alarms; syncRanges(); syncTimes();
   } catch (_) {}
 })();
 document.getElementById('csvBtn').onclick = () => {
