@@ -6,6 +6,9 @@
 <title>Mini LIDA · Class Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<!-- Intro screen only: subset to its own words so phones download a few KB, not the whole Japanese font. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@800&display=swap&text=Who%E2%80%99s%20sleepyheadPoke%20this%20personPlay%20the%20game">
+<link rel="preload" as="image" href="assets/sleepy-asleep.jpg">
 <script src="https://cdn.jsdelivr.net/npm/vega@5.30.0/build/vega.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.21.0/build/vega-lite.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.26.0/build/vega-embed.min.js"></script>
@@ -93,6 +96,26 @@ body.wall .app{max-width:none;padding:24px 32px}
 .admin button:not(.btn){font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer}
 .reveal{font-size:28px;font-weight:900}
 @media (max-width:820px){.wallgrid{grid-template-columns:1fr}.join{position:static}}
+/* Join intro (Figma "Who's sleepyhead", 402px frame): a full-screen white cover over the form.
+   Poke → the sleeper wakes up → Play → the form. Always white, because the illustrations are. */
+.intro{position:fixed;inset:0;z-index:50;overflow-y:auto;background:#fff;color:#000;display:flex;flex-direction:column;align-items:center;
+  padding:clamp(48px,12vh,94px) 8px calc(32px + env(safe-area-inset-bottom))}
+.intro[hidden]{display:none}
+.intro-title{margin:0;text-align:center;font-family:'LINE Seed JP',var(--font);font-weight:800;line-height:normal}
+.intro-title span{display:block}
+.intro-title .who{font-size:33.793px;line-height:46px}  /* line boxes measured from Figma; browsers size this font's "normal" smaller */
+.intro-title .sleepy{font-size:52.751px;line-height:72px}
+.intro-art{position:relative;flex:none;width:min(386px,100%);aspect-ratio:386/426;overflow:hidden;margin-top:4px}
+.intro-art img{position:absolute;top:0;height:100%;width:147.6%;left:-24.35%;max-width:none}
+.intro-btn{position:relative;flex:none;width:251px;height:62px;margin-top:-31px;border:0;border-radius:50px;background:#a9d6f9;color:#000;
+  font-family:'LINE Seed JP',var(--font);font-weight:800;font-size:20px;line-height:normal;cursor:pointer;transition:transform .12s}
+.intro-btn:active{transform:scale(.96)}
+.intro-btn:focus-visible{outline:3px solid #000;outline-offset:3px}
+.intro.awake .intro-art{margin-top:14px}
+.intro.awake .intro-art img{width:148.15%;left:-24.21%}
+.intro.awake .intro-btn{margin-top:-39px}
+@media (prefers-reduced-motion:no-preference){.intro.awake .intro-art img{animation:poke .4s ease-out}}
+@keyframes poke{0%,100%{transform:none}25%{transform:translateX(-6px) rotate(-1.5deg)}50%{transform:translateX(5px) rotate(1deg)}75%{transform:translateX(-2px)}}
 </style>
 </head>
 <body>
@@ -104,11 +127,16 @@ body.wall .app{max-width:none;padding:24px 32px}
 
   <!-- JOIN -->
   <section id="v-join" hidden>
+    <div class="intro" id="intro">
+      <h2 class="intro-title"><span class="who">Who’s</span><span class="sleepy">sleepyhead</span></h2>
+      <div class="intro-art"><img id="introImg" src="assets/sleepy-asleep.jpg" alt="Someone fast asleep on a desk" width="1200" height="896"></div>
+      <button type="button" class="intro-btn" id="introBtn">Poke this person</button>
+    </div>
     <h1 data-t="joinTitle"></h1>
     <p class="lead" data-t="joinLead"></p>
     <form id="joinForm" class="card" autocomplete="off">
       <label class="f"><span data-t="qNick"></span></label>
-      <div class="row"><input type="text" id="nick" maxlength="20" style="flex:1"><button type="button" class="pill" id="reroll">🎲</button></div>
+      <div class="row" style="flex-wrap:nowrap"><input type="text" id="nickEmoji" maxlength="12" aria-label="emoji" style="flex:none;width:3.2em;text-align:center;font-size:24px;padding:8px"><input type="text" id="nickName" maxlength="20" aria-label="name" placeholder="English name only" required pattern=".*\S.*" style="flex:1"><button type="button" class="pill" id="reroll">🎲</button></div>
 
       <label class="f"><span data-t="qScreen"></span> <span class="hint" data-t="qScreenHint"></span></label>
       <div class="row"><span class="big" id="screenOut">4h 00m</span></div>
@@ -452,10 +480,26 @@ async function refresh() {
 }
 
 /* JOIN */
-function pickNick() { const used = new Set(((lastState && lastState.rows) || []).map(r => r.nickname)); const free = ANIMALS.filter(a => !used.has(a)); const pool = free.length ? free : ANIMALS; return pool[Math.floor(Math.random() * pool.length)]; }
-const nickEl = document.getElementById('nick');
-nickEl.value = store('ml_nick') || pickNick();
-document.getElementById('reroll').onclick = () => { nickEl.value = pickNick(); };
+const EMOJIS = ANIMALS.map(a => a.split(' ')[0]);
+function pickEmoji() { const used = new Set(((lastState && lastState.rows) || []).map(r => String(r.nickname).split(' ')[0])); const free = EMOJIS.filter(e => !used.has(e)); const pool = free.length ? free : EMOJIS; return pool[Math.floor(Math.random() * pool.length)]; }
+// The dice only rolls the icon; the name is typed. Both are stored as one "emoji name" string, which the wall and CSV already split.
+const nickEmojiEl = document.getElementById('nickEmoji'), nickNameEl = document.getElementById('nickName');
+const saved = String(store('ml_nick') || '').split(' ');
+nickEmojiEl.value = saved[0] || pickEmoji(); nickNameEl.value = saved.slice(1).join(' ');
+function getNick() { return `${nickEmojiEl.value.replace(/\s/g, '') || pickEmoji()} ${nickNameEl.value.trim()}`; }
+document.getElementById('reroll').onclick = () => { nickEmojiEl.value = pickEmoji(); };
+const intro = document.getElementById('intro'), introImg = document.getElementById('introImg'), introBtn = document.getElementById('introBtn');
+intro.hidden = joined();  // people coming back to edit their answers skip the intro
+new Image().src = 'assets/sleepy-awake.jpg';  // so the wake-up swap is instant
+introBtn.onclick = () => {
+  if (!intro.classList.contains('awake')) {
+    intro.classList.add('awake');
+    introImg.src = 'assets/sleepy-awake.jpg'; introImg.alt = 'The same person, just woken up and rubbing their eyes';
+    introBtn.textContent = 'Play the game';
+    return;
+  }
+  intro.hidden = true; window.scrollTo(0, 0);
+};
 const screenEl = document.getElementById('screen'), guessEl = document.getElementById('guess');
 const syncRanges = () => { document.getElementById('screenOut').textContent = fmtHM(+screenEl.value); document.getElementById('guessOut').textContent = fmtHM(+guessEl.value); };
 screenEl.oninput = guessEl.oninput = syncRanges; syncRanges();
@@ -467,9 +511,10 @@ document.getElementById('joinForm').onsubmit = async e => {
   const btn = document.getElementById('joinBtn'), st = document.getElementById('joinStatus');
   btn.disabled = true; st.className = 'status'; st.textContent = t('sending');
   try {
-    await api('submit', { id: ME, nickname: nickEl.value.trim() || pickNick(), screen_min: +screenEl.value,
+    const nickname = getNick();
+    await api('submit', { id: ME, nickname, screen_min: +screenEl.value,
       bed: document.getElementById('bed').value, wake: document.getElementById('wake').value, alarms, guess_screen_min: +guessEl.value });
-    store('ml_nick', nickEl.value.trim()); store('ml_joined', '1');
+    store('ml_nick', nickname); store('ml_joined', '1');
     store('ml_answers', JSON.stringify({ screen: screenEl.value, guess: guessEl.value, bed: document.getElementById('bed').value, wake: document.getElementById('wake').value, alarms }));
     st.textContent = ''; go(COLLECT ? 'thanks' : 'play');
   } catch (err) { st.className = 'status err'; st.textContent = t('sendFail'); }
@@ -538,7 +583,7 @@ async function ask(q) {
 document.getElementById('publishBtn').onclick = async () => {
   if (!lastChart) return;
   const pub = document.getElementById('publishBtn'); pub.disabled = true;
-  try { await api('publish', Object.assign({ id: ME, nickname: store('ml_nick') || nickEl.value }, lastChart)); pub.textContent = t('published'); }
+  try { await api('publish', Object.assign({ id: ME, nickname: store('ml_nick') || getNick() }, lastChart)); pub.textContent = t('published'); }
   catch (e) { pub.disabled = false; }
 };
 
