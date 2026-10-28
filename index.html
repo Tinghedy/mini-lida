@@ -671,10 +671,23 @@ function renderStrips(rows, box, big) {
     const h = document.createElement('div'); h.className = 'stage'; h.textContent = t(label);
     const ch = document.createElement('div'); ch.className = 'chart';
     c.append(h, ch); box.append(c);
-    const spec = { mark: { type: 'text', fontSize: big ? 30 : 22, baseline: 'middle' },
+    // Tap an animal to show its name (hover tooltips don't fire on phones); tap empty space to clear.
+    // The name sits on a halo layer in the card colour so it stays readable over other animals.
+    const size = big ? 30 : 22;
+    const nameMark = { type: 'text', baseline: 'bottom', dy: -size / 2 - 2, fontSize: big ? 18 : 14, fontWeight: 'bold' };
+    const picked = [{ filter: { param: 'pick', empty: false } }];
+    const spec = { padding: { top: big ? 26 : 22 },
+      transform: [{ calculate: 'random() * 1.4 - 0.7', as: 'jitter' },
+        { calculate: "slice(datum.nickname, indexof(datum.nickname, ' ') + 1)", as: 'name' }],
       encoding: { x: { field, type: 'quantitative', title: null, scale: { zero: false, nice: true, padding: 16 }, axis },
-        y: { field: 'jitter', type: 'quantitative', axis: null, scale: { domain: [-1, 1] } }, text: { field: 'emoji' },
-        tooltip: [{ field: 'nickname' }, { field }] }, transform: [{ calculate: 'random() * 1.4 - 0.7', as: 'jitter' }] };
+        y: { field: 'jitter', type: 'quantitative', axis: null, scale: { domain: [-1, 1] } } },
+      layer: [
+        { params: [{ name: 'pick', select: { type: 'point', fields: ['nickname'], on: 'click' } }],
+          mark: { type: 'text', fontSize: size, baseline: 'middle', cursor: 'pointer' },
+          encoding: { text: { field: 'emoji' }, tooltip: [{ field: 'nickname' }, { field }],
+            opacity: { condition: { param: 'pick', empty: true, value: 1 }, value: 0.3 } } },
+        { transform: picked, mark: Object.assign({ stroke: cssVar('--card'), strokeWidth: 5, strokeJoin: 'round', color: cssVar('--card') }, nameMark), encoding: { text: { field: 'name' } } },
+        { transform: picked, mark: Object.assign({ color: cssVar('--ink') }, nameMark), encoding: { text: { field: 'name' } } }] };
     renderSpec(ch, spec, rows, { big, height: 100 }).catch(() => {});
   });
 }
