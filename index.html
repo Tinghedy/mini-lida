@@ -211,7 +211,10 @@ button.sh-chip{cursor:pointer;padding:8px 14px;gap:6px}
 .jf-badge{display:flex;align-items:center;justify-content:center;flex:none;width:30px;height:30px;border-radius:999px;background:var(--sh-tint)}
 .jf-time{display:flex;align-items:baseline;gap:4px;white-space:nowrap;font:100 36px/normal var(--sh-font);letter-spacing:-.72px;color:var(--sh-ink)}
 .jf-time small{font:400 15px/normal var(--sh-font);letter-spacing:normal;color:var(--sh-ink2)}
-.jf-tile input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;-webkit-appearance:none;appearance:none}
+/* The native time input covers the tile and takes the tap itself. Tiles are <div>s, not <label>s: on iOS a label
+   re-dispatches the tap and the picker opens then closes at once. */
+.jf-tile input{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;min-height:100%;margin:0;opacity:.011;cursor:pointer;border:0;padding:0;
+  font-size:16px;background:transparent;color:transparent;-webkit-appearance:none;appearance:none}
 .jf-tile:focus-within{outline:2px solid var(--sh-blue);outline-offset:2px}
 /* 9 PM → 11 AM, one tick an hour, long ticks every 3 h; ticks inside the sleep bar turn white */
 .jf-band{position:relative;height:40px;margin-top:14px}
@@ -308,8 +311,8 @@ button.sh-chip{cursor:pointer;padding:8px 14px;gap:6px}
           <div class="sh-card">
             <div class="sh-label" data-t="qWindow"></div>
             <div class="jf-tiles">
-              <label class="jf-tile"><span class="jf-tile-top"><span class="jf-badge"><img src="assets/icon-moon.svg" width="18" height="18" alt=""></span><span data-t="qBed"></span></span><span class="jf-time" id="bedOut"></span><input type="time" id="bed" value="00:30" required></label>
-              <label class="jf-tile"><span class="jf-tile-top"><span class="jf-badge"><img src="assets/icon-sun.svg" width="18" height="18" alt=""></span><span data-t="qWake"></span></span><span class="jf-time" id="wakeOut"></span><input type="time" id="wake" value="08:00" required></label>
+              <div class="jf-tile"><span class="jf-tile-top"><span class="jf-badge"><img src="assets/icon-moon.svg" width="18" height="18" alt=""></span><span data-t="qBed"></span></span><span class="jf-time" id="bedOut"></span><input type="time" id="bed" value="00:30" required aria-label="Went to bed"></div>
+              <div class="jf-tile"><span class="jf-tile-top"><span class="jf-badge"><img src="assets/icon-sun.svg" width="18" height="18" alt=""></span><span data-t="qWake"></span></span><span class="jf-time" id="wakeOut"></span><input type="time" id="wake" value="08:00" required aria-label="Got up"></div>
             </div>
             <div class="jf-band" id="band" aria-hidden="true"></div>
             <img class="jf-divider" src="assets/divider.svg" width="320" height="1" alt="">
