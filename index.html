@@ -203,7 +203,14 @@ button.sh-chip{cursor:pointer;padding:8px 14px;gap:6px}
   font:400 16px/normal var(--sh-font);color:var(--sh-ink)}
 .jf-nick input::placeholder{color:var(--sh-ink3)}
 .jf-nick input:focus{outline:2px solid var(--sh-blue);outline-offset:1px}
-.jf-dice{width:56px;height:56px}
+.jf-dice{width:56px;height:56px;background:var(--sh-tint);border:1px solid rgba(0,120,212,.35);
+  box-shadow:0 2px 8px rgba(11,20,36,.12),inset 0 1px 0 #fff;transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent}
+.jf-dice:active{transform:scale(.92);box-shadow:0 1px 3px rgba(11,20,36,.12),inset 0 1px 0 #fff}
+@media (prefers-reduced-motion:no-preference){
+  .jf-dice.rolling img{animation:dice-roll .45s ease-out}
+  .jf-orb.rolling{animation:orb-pop .45s ease-out}}
+@keyframes dice-roll{to{transform:rotate(360deg)}}
+@keyframes orb-pop{0%{transform:scale(.6)}60%{transform:scale(1.12)}100%{transform:none}}
 .sh-card .sh-big{margin-top:14px}
 .sh-card .sh-slider{margin-top:8px}
 .jf-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
@@ -701,7 +708,11 @@ const nickEmojiEl = document.getElementById('nickEmoji'), nickNameEl = document.
 const saved = String(store('ml_nick') || '').split(' ');
 nickEmojiEl.textContent = saved[0] || pickEmoji(); nickNameEl.value = saved.slice(1).join(' ');
 function getNick() { return `${nickEmojiEl.textContent.trim() || pickEmoji()} ${nickNameEl.value.trim()}`; }
-document.getElementById('reroll').onclick = () => { nickEmojiEl.textContent = pickEmoji(); };
+// Roll: spin the dice and pop the new icon in (restarting the animation on every tap).
+document.getElementById('reroll').onclick = e => {
+  nickEmojiEl.textContent = pickEmoji();
+  [e.currentTarget, nickEmojiEl].forEach(el => { el.classList.remove('rolling'); void el.offsetWidth; el.classList.add('rolling'); });
+};
 // Intro: Poke wakes the sleeper (and shows the step handle + chips), Play reveals the form underneath.
 const intro = document.getElementById('intro'), introImg = document.getElementById('introImg'), introLabel = document.getElementById('introBtnLabel');
 intro.hidden = joined();  // people coming back to edit their answers skip the intro
